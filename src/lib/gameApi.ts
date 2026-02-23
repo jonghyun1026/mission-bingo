@@ -191,6 +191,17 @@ export async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
   return result.members;
 }
 
+// 팀+이름으로 기존 멤버 정보 조회 (로그인 폼 자동완성용)
+export async function lookupMember(
+  teamId: string,
+  name: string
+): Promise<Pick<TeamMember, 'school' | 'major' | 'cohort'> | null> {
+  const result = await callGameApi<{
+    member: Pick<TeamMember, 'school' | 'major' | 'cohort'> | null;
+  }>('lookup_member', { teamId, name });
+  return result.member;
+}
+
 // 팀 완성 라인 수 업데이트
 export async function updateTeamLines(teamId: string, completedLines: number): Promise<void> {
   await callGameApi('update_team_lines', { teamId, completedLines });

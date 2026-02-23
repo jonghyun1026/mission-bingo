@@ -497,6 +497,30 @@ serve(async (req) => {
       )
     }
 
+    // ─── 팀+이름으로 기존 멤버 정보 조회 (자동완성용) ───
+    if (action === 'lookup_member') {
+      const { teamId, name } = data
+      if (!teamId || !name) {
+        return new Response(
+          JSON.stringify({ success: true, member: null }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      const { data: member } = await supabase
+        .from('team_members')
+        .select('name, school, major, cohort')
+        .eq('team_id', teamId)
+        .ilike('name', name.trim())
+        .order('joined_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      return new Response(
+        JSON.stringify({ success: true, member: member ?? null }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // ─── 관리자: 참가자 삭제 ───
     if (action === 'delete_member') {
       const { memberId } = data

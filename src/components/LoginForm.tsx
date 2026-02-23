@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useGame } from '@/contexts/GameContext';
+import { lookupMember } from '@/lib/gameApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,47 +17,55 @@ import mapaeImage from '@/assets/mapae-red.png';
 
 const cohortOptions = Array.from({ length: 11 }, (_, i) => `${i + 6}기`);
 
-const AUTOFILL_KEY = 'okbs_bingo_autofill';
-
-interface AutofillEntry { school: string; major: string; cohort: string; }
-type AutofillCache = Record<string, AutofillEntry>;
-
-function loadAutofill(): AutofillCache {
-  try { return JSON.parse(localStorage.getItem(AUTOFILL_KEY) || '{}'); } catch { return {}; }
-}
-function saveAutofill(teamId: string, name: string, entry: AutofillEntry) {
-  const cache = loadAutofill();
-  cache[`${teamId}__${name.trim()}`] = entry;
-  localStorage.setItem(AUTOFILL_KEY, JSON.stringify(cache));
-}
-
 export const LoginForm: React.FC = () => {
   const { login, fetchTeams, teams, isLoading } = useGame();
   const [formData, setFormData] = useState({
     teamId: '', teamName: '', name: '', school: '', major: '', cohort: '',
   });
   const [autoFilled, setAutoFilled] = useState(false);
+  const [isLookingUp, setIsLookingUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { fetchTeams(); }, [fetchTeams]);
   useEffect(() => { setMounted(true); }, []);
 
-  // 팀 또는 이름이 바뀔 때마다 자동완성 시도
+  // 팀 또는 이름이 바뀔 때 DB에서 기존 멤버 정보 조회 (600ms 디바운스)
   useEffect(() => {
-    if (!formData.teamId || !formData.name.trim()) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!formData.teamId || formData.name.trim().length < 2) {
       setAutoFilled(false);
       return;
     }
-    const cache = loadAutofill();
-    const entry = cache[`${formData.teamId}__${formData.name.trim()}`];
-    if (entry) {
-      setFormData((prev) => ({ ...prev, school: entry.school, major: entry.major, cohort: entry.cohort }));
-      setAutoFilled(true);
-    } else {
-      setAutoFilled(false);
-    }
+
+    debounceRef.current = setTimeout(async () => {
+      setIsLookingUp(true);
+      try {
+        const member = await lookupMember(formData.teamId, formData.name.trim());
+        if (member) {
+          setFormData((prev) => ({
+            ...prev,
+            school: member.school,
+            major: member.major,
+            cohort: member.cohort,
+          }));
+          setAutoFilled(true);
+        } else {
+          setAutoFilled(false);
+        }
+      } catch {
+        setAutoFilled(false);
+      } finally {
+        setIsLookingUp(false);
+      }
+    }, 600);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [formData.teamId, formData.name]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,12 +75,6 @@ export const LoginForm: React.FC = () => {
       setError(null);
       try {
         await login(formData.teamId, formData.teamName, formData.name, formData.school, formData.major, formData.cohort);
-        // 로그인 성공 시 자동완성 캐시 저장
-        saveAutofill(formData.teamId, formData.name, {
-          school: formData.school,
-          major: formData.major,
-          cohort: formData.cohort,
-        });
       } catch (err) {
         setError('로그인에 실패했습니다. 다시 시도해주세요.');
         console.error(err);
@@ -178,10 +181,16 @@ export const LoginForm: React.FC = () => {
               </div>
             </div>
 
-            {autoFilled && (
-              <div className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-xs font-bold transition-all duration-300`}>
+            {isLookingUp && (
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-muted/60 border border-border text-muted-foreground text-xs font-medium">
+                <div className="w-3 h-3 border-2 border-muted-foreground/40 border-t-muted-foreground rounded-full animate-spin" />
+                등록된 정보 확인 중...
+              </div>
+            )}
+            {!isLookingUp && autoFilled && (
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-xs font-bold">
                 <span>✓</span>
-                이전에 입력한 정보가 자동으로 채워졌어요
+                등록된 정보로 자동으로 채워졌어요
               </div>
             )}
 
