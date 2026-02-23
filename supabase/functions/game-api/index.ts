@@ -83,7 +83,7 @@ serve(async (req) => {
         throw new Error('userId is required')
       }
 
-      // 팀원 추가/갱신 (같은 계정은 1개 멤버 레코드 유지)
+      // 팀원 추가/갱신 (같은 조+이름은 1개 레코드 유지, 여러 기기 접속 대응)
       const { data: member, error: memberError } = await supabase
         .from('team_members')
         .upsert({
@@ -93,7 +93,7 @@ serve(async (req) => {
           major,
           cohort,
           user_id: userId
-        }, { onConflict: 'user_id' })
+        }, { onConflict: 'team_id,name' })
         .select()
         .single()
 
