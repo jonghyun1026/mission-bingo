@@ -124,6 +124,12 @@ export const BingoBoard: React.FC = () => {
       return;
     }
 
+    // 줄 수가 줄어든 경우 ref도 낮춰야 재달성 시 축하 모달이 다시 뜸
+    if (totalLines < celebratedLineCountRef.current) {
+      celebratedLineCountRef.current = totalLines;
+      return;
+    }
+
     if (newLines.length === 0) return;
 
     const prevCelebrated = celebratedLineCountRef.current;
