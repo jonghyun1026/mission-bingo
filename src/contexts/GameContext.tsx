@@ -30,6 +30,7 @@ interface GameContextType {
   completedLines: CompletedLine[];
   totalCompletedLines: number;
   isLoading: boolean;
+  sessionRestoring: boolean;
   teams: ApiTeam[];
   teamMembers: TeamMember[];
   teamSnapshots: TeamSnapshot[];
@@ -49,6 +50,20 @@ interface GameContextType {
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
+
+const SESSION_KEY = 'okbs_bingo_session';
+
+interface SavedSession {
+  id: string;
+  visibleMemberId: string;
+  teamName: string;
+  name: string;
+  school: string;
+  major: string;
+  cohort: string;
+  teamDbId: string;
+  boardId: string;
+}
 
 const createBoardFromDb = (cells: BoardCell[], photos: Photo[]): BingoCell[] => {
   return cells.map((cell) => {
@@ -79,6 +94,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [bingoBoard, setBingoBoard] = useState<BingoCell[]>([]);
   const [completedLines, setCompletedLines] = useState<CompletedLine[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionRestoring, setSessionRestoring] = useState(true);
   const [teams, setTeams] = useState<ApiTeam[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamSnapshots, setTeamSnapshots] = useState<TeamSnapshot[]>([]);
@@ -138,6 +154,28 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
+  // 앱 시작 시 저장된 세션으로 자동 복원
+  useEffect(() => {
+    const restore = async () => {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return;
+        const saved: SavedSession = JSON.parse(raw);
+        const refreshed = await getBoard(saved.teamDbId);
+        const newBoard = createBoardFromDb(refreshed.cells, refreshed.photos || []);
+        setUser(saved);
+        setBingoBoard(newBoard);
+        setCompletedLines(computeAllLines(newBoard));
+      } catch {
+        localStorage.removeItem(SESSION_KEY);
+      } finally {
+        setSessionRestoring(false);
+      }
+    };
+    restore();
+  // computeAllLines는 안정적인 callback이므로 deps에 포함
+  }, [computeAllLines]);
+
   const login = useCallback(async (
     teamId: string,
     teamName: string,
@@ -162,6 +200,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         boardId: result.boardId,
       };
       
+      // 세션을 localStorage에 저장
+      const session: SavedSession = {
+        id: newUser.id,
+        visibleMemberId: newUser.visibleMemberId,
+        teamName: newUser.teamName,
+        name: newUser.name,
+        school: newUser.school,
+        major: newUser.major,
+        cohort: newUser.cohort,
+        teamDbId: newUser.teamDbId,
+        boardId: newUser.boardId,
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
       setUser(newUser);
       setBingoBoard(createBoardFromDb(result.cells, result.photos || []));
       setCompletedLines([]);
@@ -173,9 +225,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchTeamSnapshot]);
 
   const logout = useCallback(() => {
+    localStorage.removeItem(SESSION_KEY);
     setUser(null);
     setBingoBoard([]);
     setCompletedLines([]);
@@ -346,6 +399,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         completedLines,
         totalCompletedLines,
         isLoading,
+        sessionRestoring,
         teams,
         teamMembers,
         teamSnapshots,
