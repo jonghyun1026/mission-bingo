@@ -670,6 +670,16 @@ serve(async (req) => {
         }
       }
 
+      // 마패 획득 순위 계산 (second_line_completed_at 기준)
+      const rankedForAdmin = [...(teams || [])]
+        .filter((t) => !!t.second_line_completed_at)
+        .sort((a, b) =>
+          new Date(a.second_line_completed_at as string).getTime() -
+          new Date(b.second_line_completed_at as string).getTime()
+        )
+      const adminRankMap = new Map<string, number>()
+      rankedForAdmin.forEach((team, idx) => adminRankMap.set(team.id, idx + 1))
+
       const result = sortTeamsByNumber(teams as TeamSummary[]).map((team) => ({
         id: team.id,
         name: team.name,
@@ -677,6 +687,8 @@ serve(async (req) => {
         completedMissions: completedMap.get(team.id) || 0,
         totalMissions: totalMap.get(team.id) || 0,
         photoCount: photoByBoard.get(team.id) || 0,
+        secondLineCompletedAt: team.second_line_completed_at || null,
+        rank: adminRankMap.get(team.id) || null,
         members: (membersByTeam.get(team.id) || []).map((m) => ({
           id: m.id, name: m.name, school: m.school, major: m.major, cohort: m.cohort,
         })),

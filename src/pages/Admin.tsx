@@ -263,13 +263,27 @@ const AdminDashboard = () => {
   };
 
   const totalMembers = teams.reduce((acc, t) => acc + t.members.length, 0);
-  const successTeams = teams.filter(t => t.completedLines >= 2).length;
+  const mapaeTeams = teams.filter(t => t.rank !== null).length;
+
+  // 마패 획득 순위 정렬: 순위 있는 팀 먼저(rank 오름차순), 나머지는 completedMissions 내림차순
+  const sortedTeams = [...teams].sort((a, b) => {
+    if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
+    if (a.rank !== null) return -1;
+    if (b.rank !== null) return 1;
+    return b.completedMissions - a.completedMissions;
+  });
+
+  const rankColors: Record<number, { bg: string; text: string; border: string; label: string }> = {
+    1: { bg: 'bg-gradient-to-br from-yellow-400 to-amber-500', text: 'text-white', border: 'border-yellow-300', label: '🥇 1등' },
+    2: { bg: 'bg-gradient-to-br from-slate-300 to-slate-400', text: 'text-white', border: 'border-slate-200', label: '🥈 2등' },
+    3: { bg: 'bg-gradient-to-br from-orange-400 to-amber-600', text: 'text-white', border: 'border-orange-300', label: '🥉 3등' },
+  };
 
   const stats = [
     { icon: Users, label: '참가자', value: `${totalMembers}명`, color: 'text-primary', bg: 'bg-primary/10' },
     { icon: Crown, label: '총 조', value: `${teams.length}개`, color: 'text-amber-600', bg: 'bg-amber-100/60' },
     { icon: ImagePlus, label: '업로드 사진', value: `${photos.length}장`, color: 'text-primary', bg: 'bg-primary/10' },
-    { icon: Trophy, label: '2줄 달성', value: `${successTeams}개조`, color: 'text-yellow-600', bg: 'bg-yellow-100/60' },
+    { icon: Trophy, label: '마패 획득', value: `${mapaeTeams}개조`, color: 'text-yellow-600', bg: 'bg-yellow-100/60' },
   ];
 
   return (
@@ -364,116 +378,163 @@ const AdminDashboard = () => {
 
             {/* 조별 현황 탭 */}
             {activeTab === 'teams' && (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                {/* 마패 획득 순위 요약 */}
+                {!isLoadingTeams && mapaeTeams > 0 && (
+                  <div className="rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50/80 to-yellow-50/60 p-3.5">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <img src={mapaeImage} alt="" className="w-4 h-4 object-contain" />
+                      <p className="text-xs font-black text-amber-800">마패 획득 순위 (게임 최종 순위)</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      {sortedTeams.filter(t => t.rank !== null).map(team => {
+                        const rc = rankColors[team.rank!] || rankColors[3];
+                        const time = team.secondLineCompletedAt
+                          ? new Date(team.secondLineCompletedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                          : '';
+                        return (
+                          <div key={team.id} className="flex items-center gap-2.5">
+                            <span className={`w-12 text-center text-[10px] font-black px-1.5 py-0.5 rounded-full ${rc.bg} ${rc.text} shrink-0`}>
+                              {team.rank}등
+                            </span>
+                            <span className="text-xs font-black text-amber-900 flex-1">{team.name}</span>
+                            <span className="text-[10px] text-amber-700/70 font-medium shrink-0">{time}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {isLoadingTeams ? (
                   <div className="flex flex-col items-center justify-center py-16 gap-3">
                     <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                     <p className="text-xs text-muted-foreground font-medium">데이터 불러오는 중...</p>
                   </div>
-                ) : teams.map(team => {
-                  const isExpanded = expandedTeam === team.id;
-                  const percent = team.totalMissions > 0
-                    ? Math.round(team.completedMissions / team.totalMissions * 100) : 0;
-                  const teamNum = team.name.replace(/[^0-9]/g, '');
-                  const isSuccess = team.completedLines >= 2;
+                ) : (
+                  <div className="space-y-2">
+                    {sortedTeams.map(team => {
+                      const isExpanded = expandedTeam === team.id;
+                      const percent = team.totalMissions > 0
+                        ? Math.round(team.completedMissions / team.totalMissions * 100) : 0;
+                      const teamNum = team.name.replace(/[^0-9]/g, '');
+                      const hasRank = team.rank !== null;
+                      const rc = hasRank ? (rankColors[team.rank!] || rankColors[3]) : null;
 
-                  return (
-                    <div key={team.id}
-                      className="rounded-2xl border border-white/50 overflow-hidden bg-white/40 backdrop-blur-sm shadow-sm">
-                      <div
-                        className="p-3.5 cursor-pointer hover:bg-white/30 transition-colors"
-                        onClick={() => setExpandedTeam(isExpanded ? null : team.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 min-w-0">
-                            {/* 팀 번호 배지 */}
-                            <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center shadow-sm">
-                              <span className="text-sm font-black text-white">{teamNum}</span>
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="text-sm font-black text-foreground">{team.name}</p>
-                                {isSuccess && (
-                                  <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-sm">
-                                    <Trophy className="w-2.5 h-2.5" /> 2줄 달성
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                {team.completedMissions}/{team.totalMissions}칸 · {team.completedLines}줄 · 사진 {team.photoCount}장 · 참가자 {team.members.length}명
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                            <span className="text-xs font-black text-primary">{percent}%</span>
-                            {isExpanded
-                              ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                              : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                          </div>
-                        </div>
-
-                        {/* 진행률 바 */}
-                        <div className="mt-2.5 h-1.5 rounded-full bg-black/8 overflow-hidden">
+                      return (
+                        <div key={team.id}
+                          className={`rounded-2xl border overflow-hidden backdrop-blur-sm shadow-sm transition-all ${
+                            hasRank
+                              ? 'border-amber-300/60 bg-amber-50/50'
+                              : 'border-white/50 bg-white/40'
+                          }`}>
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-primary to-amber-400 transition-all duration-700"
-                            style={{ width: `${percent}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* 확장 영역 */}
-                      {isExpanded && (
-                        <div className="border-t border-white/40 p-3.5 bg-white/20">
-                          <p className="text-xs font-black text-foreground mb-2 flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5 text-primary" />
-                            조원 ({team.members.length}명)
-                          </p>
-                          <div className="space-y-1.5 mb-3">
-                            {team.members.length === 0 ? (
-                              <p className="text-xs text-muted-foreground py-2 text-center">아직 참가자가 없습니다.</p>
-                            ) : team.members.map(m => (
-                              <div key={m.id}
-                                className="flex items-center justify-between p-2.5 rounded-xl bg-white/50 border border-white/60">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                                    <span className="text-[10px] font-black text-primary">
-                                      {m.name.charAt(0)}
-                                    </span>
+                            className="p-3.5 cursor-pointer hover:bg-white/30 transition-colors"
+                            onClick={() => setExpandedTeam(isExpanded ? null : team.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 min-w-0">
+                                {/* 팀 번호 or 순위 배지 */}
+                                {hasRank && rc ? (
+                                  <div className={`w-10 h-10 shrink-0 rounded-xl ${rc.bg} flex flex-col items-center justify-center shadow-sm border ${rc.border}`}>
+                                    <span className="text-[9px] font-black text-white leading-none">{team.rank}등</span>
+                                    <span className="text-[10px] font-black text-white leading-none mt-0.5">{teamNum}조</span>
                                   </div>
-                                  <div className="min-w-0">
-                                    <p className="text-xs font-black text-foreground truncate">{m.name}</p>
-                                    <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
-                                      {m.school} · {m.major}
-                                    </p>
+                                ) : (
+                                  <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center shadow-sm">
+                                    <span className="text-sm font-black text-white">{teamNum}</span>
                                   </div>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0 ml-2">
-                                  <span className="text-[10px] font-bold text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
-                                    {m.cohort}
-                                  </span>
-                                  <button
-                                    onClick={e => { e.stopPropagation(); setPendingDeleteMember({ member: m, teamName: team.name }); }}
-                                    className="w-6 h-6 rounded-xl bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors"
-                                    title="참가자 삭제"
-                                  >
-                                    <UserX className="w-3.5 h-3.5 text-destructive" />
-                                  </button>
+                                )}
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-black text-foreground">{team.name}</p>
+                                    {hasRank && rc && (
+                                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${rc.bg} ${rc.text} shadow-sm`}>
+                                        {rc.label} 마패
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    {team.completedMissions}/{team.totalMissions}칸 · {team.completedLines}줄 · 사진 {team.photoCount}장 · 참가자 {team.members.length}명
+                                  </p>
                                 </div>
                               </div>
-                            ))}
+                              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                <span className="text-xs font-black text-primary">{percent}%</span>
+                                {isExpanded
+                                  ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                                  : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                              </div>
+                            </div>
+
+                            {/* 진행률 바 */}
+                            <div className="mt-2.5 h-1.5 rounded-full bg-black/8 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-700 ${
+                                  hasRank
+                                    ? 'bg-gradient-to-r from-yellow-400 to-amber-500'
+                                    : 'bg-gradient-to-r from-primary to-amber-400'
+                                }`}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
                           </div>
-                          <button
-                            onClick={() => { setFilterTeamId(team.id); setActiveTab('photos'); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-all"
-                          >
-                            <ImagePlus className="w-3.5 h-3.5" />
-                            이 조 사진 보기
-                          </button>
+
+                          {/* 확장 영역 */}
+                          {isExpanded && (
+                            <div className="border-t border-white/40 p-3.5 bg-white/20">
+                              <p className="text-xs font-black text-foreground mb-2 flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5 text-primary" />
+                                조원 ({team.members.length}명)
+                              </p>
+                              <div className="space-y-1.5 mb-3">
+                                {team.members.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground py-2 text-center">아직 참가자가 없습니다.</p>
+                                ) : team.members.map(m => (
+                                  <div key={m.id}
+                                    className="flex items-center justify-between p-2.5 rounded-xl bg-white/50 border border-white/60">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                        <span className="text-[10px] font-black text-primary">
+                                          {m.name.charAt(0)}
+                                        </span>
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-black text-foreground truncate">{m.name}</p>
+                                        <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
+                                          {m.school} · {m.major}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                                      <span className="text-[10px] font-bold text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
+                                        {m.cohort}
+                                      </span>
+                                      <button
+                                        onClick={e => { e.stopPropagation(); setPendingDeleteMember({ member: m, teamName: team.name }); }}
+                                        className="w-6 h-6 rounded-xl bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors"
+                                        title="참가자 삭제"
+                                      >
+                                        <UserX className="w-3.5 h-3.5 text-destructive" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <button
+                                onClick={() => { setFilterTeamId(team.id); setActiveTab('photos'); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-all"
+                              >
+                                <ImagePlus className="w-3.5 h-3.5" />
+                                이 조 사진 보기
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

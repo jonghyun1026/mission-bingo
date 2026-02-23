@@ -248,6 +248,8 @@ export interface AdminTeam {
   completedMissions: number;
   totalMissions: number;
   photoCount: number;
+  secondLineCompletedAt: string | null;
+  rank: number | null;
   members: Array<{ id: string; name: string; school: string; major: string; cohort: string }>;
 }
 
