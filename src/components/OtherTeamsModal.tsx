@@ -42,22 +42,22 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
     return snapshots.find((t) => t.id === selectedTeamId)?.name || '선택 조';
   }, [selectedTeamId, snapshots]);
 
-  // 마패 획득 팀: rank 순으로
-  const mapaeRanking = useMemo(
-    () => [...snapshots].filter((t) => t.rank !== null).sort((a, b) => (a.rank || 999) - (b.rank || 999)),
+  // 마패 순위 1~3위만
+  const mapaeTop3 = useMemo(
+    () =>
+      [...snapshots]
+        .filter((t) => t.rank !== null && t.rank <= 3)
+        .sort((a, b) => (a.rank || 999) - (b.rank || 999)),
     [snapshots]
   );
 
-  // 전체 리더보드: 마패 획득 팀 먼저(rank 순), 나머지는 완료 칸 내림차순
-  const leaderboard = useMemo(
+  // 조별 진행 현황: 팀 번호 순 (순위 없음)
+  const teamsByNumber = useMemo(
     () =>
       [...snapshots].sort((a, b) => {
-        if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
-        if (a.rank !== null) return -1;
-        if (b.rank !== null) return 1;
-        if (b.completedMissions !== a.completedMissions) return b.completedMissions - a.completedMissions;
-        if (b.completedLines !== a.completedLines) return b.completedLines - a.completedLines;
-        return a.name.localeCompare(b.name, 'ko');
+        const na = parseInt(a.name.replace(/[^0-9]/g, '')) || 0;
+        const nb = parseInt(b.name.replace(/[^0-9]/g, '')) || 0;
+        return na - nb;
       }),
     [snapshots]
   );
@@ -118,28 +118,30 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
                   <span className="text-sm font-bold text-[#6B472A]">우리 조 마패 순위</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {myMapaeRank ? (
-                    <span className={`text-sm font-black px-3 py-1 rounded-full ${(RANK_STYLE[myMapaeRank] || RANK_STYLE[3]).bg} text-white shadow-sm`}>
-                      {RANK_STYLE[myMapaeRank]?.emoji || '🏅'} {myMapaeRank}등
+                  {myMapaeRank && myMapaeRank <= 3 ? (
+                    <span className={`text-sm font-black px-3 py-1 rounded-full ${(RANK_STYLE[myMapaeRank]).bg} text-white shadow-sm`}>
+                      {RANK_STYLE[myMapaeRank].emoji} {myMapaeRank}등
                     </span>
+                  ) : myMapaeRank ? (
+                    <span className="text-sm font-black text-[#5A3E28]">마패 획득 ({myMapaeRank}등)</span>
                   ) : (
                     <span className="text-sm font-black text-[#5A3E28]">마패 미획득</span>
                   )}
                 </div>
               </div>
 
-              {/* 마패 획득 순위 */}
+              {/* 마패 획득 순위 — 1~3위만 */}
               <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-3.5">
                 <div className="flex items-center gap-2 mb-3">
                   <img src={mapaeImage} alt="" className="w-4 h-4 object-contain" />
-                  <p className="text-sm font-black text-amber-800">마패 획득 순위 (게임 최종 순위)</p>
+                  <p className="text-sm font-black text-amber-800">2줄 달성 랭킹 (게임 최종 순위)</p>
                 </div>
-                {mapaeRanking.length === 0 ? (
-                  <p className="text-xs text-amber-700/70 text-center py-2">아직 마패를 획득한 조가 없습니다.</p>
+                {mapaeTop3.length === 0 ? (
+                  <p className="text-xs text-amber-700/70 text-center py-2">아직 2줄을 달성한 조가 없습니다.</p>
                 ) : (
                   <div className="space-y-2">
-                    {mapaeRanking.map((team) => {
-                      const rs = RANK_STYLE[team.rank!] || RANK_STYLE[3];
+                    {mapaeTop3.map((team) => {
+                      const rs = RANK_STYLE[team.rank!];
                       const isMine = team.id === currentTeamId;
                       const time = team.secondLineCompletedAt
                         ? new Date(team.secondLineCompletedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -157,11 +159,9 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
                               {team.name}
                               {isMine && <span className="ml-1.5 text-[10px] font-black px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">내 조</span>}
                             </p>
-                            {time && <p className="text-[10px] text-muted-foreground mt-0.5">획득 시각 {time}</p>}
+                            {time && <p className="text-[10px] text-muted-foreground mt-0.5">달성 시각 {time}</p>}
                           </div>
-                          <div className="shrink-0 text-right">
-                            <img src={mapaeImage} alt="" className="w-5 h-5 object-contain ml-auto" />
-                          </div>
+                          <img src={mapaeImage} alt="" className="w-5 h-5 object-contain shrink-0" />
                         </div>
                       );
                     })}
@@ -169,71 +169,43 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
                 )}
               </div>
 
-              {/* 전체 리더보드 */}
+              {/* 조별 진행 현황 — 순위 없이 팀 번호 순 */}
               <div className="space-y-1.5">
-                <p className="text-sm font-black text-foreground">전체 조 리더보드</p>
-                <div className="grid grid-cols-[36px_1fr_64px_48px] px-2 py-1.5 text-[11px] font-bold text-muted-foreground">
-                  <span>순위</span>
-                  <span>조 이름</span>
-                  <span className="text-right">성공 칸</span>
-                  <span className="text-right">빙고</span>
-                </div>
-                {leaderboard.map((team, index) => {
+                <p className="text-sm font-black text-foreground">조별 진행 현황</p>
+                {teamsByNumber.map((team) => {
                   const percent = team.totalMissions > 0
                     ? Math.round((team.completedMissions / team.totalMissions) * 100) : 0;
                   const isMine = currentTeamId === team.id;
-                  const rs = team.rank ? (RANK_STYLE[team.rank] || RANK_STYLE[3]) : null;
+                  const hasMapae = team.rank !== null;
 
                   return (
                     <button
                       key={team.id}
                       onClick={() => { handleTeamSelect(team.id); setActiveTab('gallery'); }}
                       className={`w-full text-left p-3 rounded-xl border transition-colors ${
-                        isMine
-                          ? 'border-primary bg-primary/5'
-                          : team.rank
-                            ? 'border-amber-200 bg-amber-50/60 hover:bg-amber-50'
-                            : 'border-border bg-card hover:bg-muted/20'
+                        isMine ? 'border-primary bg-primary/5' : 'border-border bg-card hover:bg-muted/20'
                       }`}
                     >
-                      <div className="grid grid-cols-[36px_1fr_64px_48px] items-center gap-1">
-                        <div>
-                          {rs ? (
-                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-black ${rs.bg} ${rs.text} shadow-sm`}>
-                              {team.rank}
-                            </span>
-                          ) : (
-                            <span className="text-sm font-black text-muted-foreground">#{index + 1}</span>
-                          )}
-                        </div>
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                           <span className="text-sm font-bold text-foreground truncate">{team.name}</span>
                           {isMine && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">내 조</span>
                           )}
-                          {rs && (
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${rs.bg} ${rs.text} shrink-0`}>
-                              {rs.emoji} 마패
-                            </span>
+                          {hasMapae && (
+                            <img src={mapaeImage} alt="마패" className="w-3.5 h-3.5 object-contain shrink-0" title="마패 획득" />
                           )}
                         </div>
-                        <span className="text-right text-sm font-black text-foreground tabular-nums">
-                          {team.completedMissions}칸
-                        </span>
-                        <span className="text-right text-xs font-bold text-muted-foreground tabular-nums">
-                          {team.completedLines}줄
-                        </span>
-                      </div>
-                      <div className="mt-1.5 pl-[36px]">
-                        <div className="h-1 rounded-full bg-muted/40 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${rs ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 'bg-primary/60'}`}
-                            style={{ width: `${percent}%` }}
-                          />
+                        <div className="flex items-center gap-2 shrink-0 text-xs text-muted-foreground font-medium tabular-nums">
+                          <span>{team.completedMissions}/{team.totalMissions}칸</span>
+                          <span>{team.completedLines}줄</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          진행률 {percent}% · {team.completedMissions}/{team.totalMissions}칸
-                        </p>
+                      </div>
+                      <div className="mt-2 h-1.5 rounded-full bg-muted/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-all duration-700"
+                          style={{ width: `${percent}%` }}
+                        />
                       </div>
                     </button>
                   );
