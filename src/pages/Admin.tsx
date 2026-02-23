@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import {
   Users, Crown, ImagePlus, ChevronDown, ChevronUp,
   ArrowLeft, LogOut, Trash2, RefreshCw, X, AlertTriangle, UserX,
+  Shield, Trophy, Camera,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -11,6 +12,7 @@ import {
   getAdminTeams, getAdminPhotos, deletePhoto, deleteMember,
   AdminTeam, AdminPhoto,
 } from '@/lib/gameApi';
+import mapaeImage from '@/assets/mapae-red.png';
 
 /* ───────────────────────── 사진 삭제 확인 모달 ───────────────────────── */
 const DeletePhotoModal: React.FC<{
@@ -20,39 +22,35 @@ const DeletePhotoModal: React.FC<{
   isDeleting: boolean;
 }> = ({ photo, onConfirm, onCancel, isDeleting }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-    <div className="relative w-full max-w-sm bg-card rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+    <div className="relative w-full max-w-sm glass-card-premium rounded-3xl overflow-hidden">
       <div className="p-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-destructive/10 flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-destructive" />
           </div>
           <div>
-            <h3 className="text-body font-black text-foreground">사진 삭제</h3>
-            <p className="text-caption text-muted-foreground">이 작업은 되돌릴 수 없습니다</p>
+            <h3 className="text-base font-black text-foreground">사진 삭제</h3>
+            <p className="text-xs text-muted-foreground">이 작업은 되돌릴 수 없습니다</p>
           </div>
         </div>
-
-        <div className="rounded-xl overflow-hidden mb-4 border border-border">
+        <div className="rounded-2xl overflow-hidden mb-4 border border-white/50">
           <img src={photo.url} alt="" className="w-full h-36 object-cover" />
           <div className="p-3 bg-muted/30">
-            <p className="text-body-sm font-bold text-foreground">{photo.teamName}</p>
-            <p className="text-caption text-muted-foreground">{photo.missionTitle} · {photo.uploaderName}</p>
+            <p className="text-sm font-bold text-foreground">{photo.teamName}</p>
+            <p className="text-xs text-muted-foreground">{photo.missionTitle} · {photo.uploaderName}</p>
           </div>
         </div>
-
-        <p className="text-caption text-muted-foreground mb-4">
+        <p className="text-xs text-muted-foreground mb-4">
           사진을 삭제하면 해당 칸의 완료 상태가 취소되고, 빙고 줄 수와 랭킹이 즉시 재계산됩니다.
         </p>
-
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1 rounded-full" onClick={onCancel} disabled={isDeleting}>
+          <Button variant="outline" className="flex-1 rounded-2xl font-bold border-border/60" onClick={onCancel} disabled={isDeleting}>
             취소
           </Button>
           <Button
-            className="flex-1 rounded-full bg-destructive hover:bg-destructive/90 text-white font-bold"
-            onClick={onConfirm}
-            disabled={isDeleting}
+            className="flex-1 rounded-2xl bg-destructive hover:bg-destructive/90 text-white font-bold"
+            onClick={onConfirm} disabled={isDeleting}
           >
             {isDeleting ? (
               <span className="flex items-center gap-1.5">
@@ -60,10 +58,7 @@ const DeletePhotoModal: React.FC<{
                 삭제 중...
               </span>
             ) : (
-              <span className="flex items-center gap-1.5">
-                <Trash2 className="w-3.5 h-3.5" />
-                삭제 확인
-              </span>
+              <span className="flex items-center gap-1.5"><Trash2 className="w-3.5 h-3.5" />삭제 확인</span>
             )}
           </Button>
         </div>
@@ -81,37 +76,33 @@ const DeleteMemberModal: React.FC<{
   isDeleting: boolean;
 }> = ({ member, teamName, onConfirm, onCancel, isDeleting }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-    <div className="relative w-full max-w-sm bg-card rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+    <div className="relative w-full max-w-sm glass-card-premium rounded-3xl overflow-hidden">
       <div className="p-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-destructive/10 flex items-center justify-center">
             <UserX className="w-5 h-5 text-destructive" />
           </div>
           <div>
-            <h3 className="text-body font-black text-foreground">참가자 삭제</h3>
-            <p className="text-caption text-muted-foreground">이 작업은 되돌릴 수 없습니다</p>
+            <h3 className="text-base font-black text-foreground">참가자 삭제</h3>
+            <p className="text-xs text-muted-foreground">이 작업은 되돌릴 수 없습니다</p>
           </div>
         </div>
-
-        <div className="rounded-xl p-3.5 mb-4 border border-border bg-muted/20">
-          <p className="text-body font-bold text-foreground">{member.name}</p>
-          <p className="text-caption text-muted-foreground">{teamName} · {member.school} · {member.major}</p>
-          <p className="text-caption text-muted-foreground">{member.cohort}</p>
+        <div className="rounded-2xl p-3.5 mb-4 bg-muted/30 border border-white/40">
+          <p className="text-sm font-bold text-foreground">{member.name}</p>
+          <p className="text-xs text-muted-foreground">{teamName} · {member.school} · {member.major}</p>
+          <p className="text-xs text-muted-foreground">{member.cohort}</p>
         </div>
-
-        <p className="text-caption text-muted-foreground mb-4">
+        <p className="text-xs text-muted-foreground mb-4">
           참가자를 삭제해도 업로드된 사진과 빙고 기록은 유지됩니다.
         </p>
-
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1 rounded-full" onClick={onCancel} disabled={isDeleting}>
+          <Button variant="outline" className="flex-1 rounded-2xl font-bold border-border/60" onClick={onCancel} disabled={isDeleting}>
             취소
           </Button>
           <Button
-            className="flex-1 rounded-full bg-destructive hover:bg-destructive/90 text-white font-bold"
-            onClick={onConfirm}
-            disabled={isDeleting}
+            className="flex-1 rounded-2xl bg-destructive hover:bg-destructive/90 text-white font-bold"
+            onClick={onConfirm} disabled={isDeleting}
           >
             {isDeleting ? (
               <span className="flex items-center gap-1.5">
@@ -119,10 +110,7 @@ const DeleteMemberModal: React.FC<{
                 삭제 중...
               </span>
             ) : (
-              <span className="flex items-center gap-1.5">
-                <UserX className="w-3.5 h-3.5" />
-                삭제 확인
-              </span>
+              <span className="flex items-center gap-1.5"><UserX className="w-3.5 h-3.5" />삭제 확인</span>
             )}
           </Button>
         </div>
@@ -148,10 +136,10 @@ const PhotoReviewPanel: React.FC<{
       <div className="flex flex-wrap gap-1.5 mb-4">
         <button
           onClick={() => onFilterChange('all')}
-          className={`px-3 py-1 rounded-full text-caption font-bold border transition-colors ${
+          className={`px-3 py-1.5 rounded-2xl text-xs font-bold border transition-all ${
             filterTeamId === 'all'
-              ? 'border-primary bg-primary/10 text-primary'
-              : 'border-border text-muted-foreground hover:text-foreground'
+              ? 'border-primary bg-primary/10 text-primary shadow-sm'
+              : 'border-white/50 bg-white/40 text-muted-foreground hover:text-foreground hover:bg-white/60'
           }`}
         >
           전체 ({photos.length})
@@ -162,10 +150,10 @@ const PhotoReviewPanel: React.FC<{
             <button
               key={team.id}
               onClick={() => onFilterChange(team.id)}
-              className={`px-3 py-1 rounded-full text-caption font-bold border transition-colors ${
+              className={`px-3 py-1.5 rounded-2xl text-xs font-bold border transition-all ${
                 filterTeamId === team.id
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border text-muted-foreground hover:text-foreground'
+                  ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                  : 'border-white/50 bg-white/40 text-muted-foreground hover:text-foreground hover:bg-white/60'
               }`}
             >
               {team.name} ({count})
@@ -175,28 +163,33 @@ const PhotoReviewPanel: React.FC<{
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-xs text-muted-foreground font-medium">사진 불러오는 중...</p>
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-caption text-muted-foreground py-10">업로드된 사진이 없습니다.</p>
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <div className="w-14 h-14 rounded-3xl bg-muted/40 flex items-center justify-center">
+            <Camera className="w-6 h-6 text-muted-foreground/50" />
+          </div>
+          <p className="text-sm font-bold text-muted-foreground">업로드된 사진이 없습니다</p>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {filtered.map(photo => (
-            <div key={photo.id} className="rounded-xl overflow-hidden border border-border bg-card relative">
+            <div key={photo.id} className="rounded-2xl overflow-hidden border border-white/50 bg-white/40 backdrop-blur-sm relative group shadow-sm">
               <img src={photo.url} alt={photo.missionTitle} className="w-full h-28 object-cover" />
-              {/* 삭제 버튼 – 항상 표시 */}
               <button
                 onClick={() => onDelete(photo)}
-                className="absolute top-1.5 right-1.5 w-7 h-7 bg-destructive/85 hover:bg-destructive rounded-full flex items-center justify-center shadow-md transition-colors"
+                className="absolute top-2 right-2 w-7 h-7 bg-destructive/85 hover:bg-destructive rounded-full flex items-center justify-center shadow-md transition-all hover:scale-110"
                 title="사진 삭제"
               >
                 <Trash2 className="w-3.5 h-3.5 text-white" />
               </button>
-              <div className="p-2">
-                <p className="text-[11px] font-bold text-foreground truncate">{photo.teamName}</p>
+              <div className="p-2.5">
+                <p className="text-[11px] font-black text-foreground truncate">{photo.teamName}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{photo.missionTitle}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{photo.uploaderName}</p>
+                <p className="text-[10px] text-muted-foreground/70 truncate">{photo.uploaderName}</p>
               </div>
             </div>
           ))}
@@ -217,17 +210,12 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<'teams' | 'photos'>('teams');
   const [filterTeamId, setFilterTeamId] = useState('all');
 
-  // 사진 삭제
   const [pendingDeletePhoto, setPendingDeletePhoto] = useState<AdminPhoto | null>(null);
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
-
-  // 참가자 삭제
   const [pendingDeleteMember, setPendingDeleteMember] = useState<{
-    member: AdminTeam['members'][number];
-    teamName: string;
+    member: AdminTeam['members'][number]; teamName: string;
   } | null>(null);
   const [isDeletingMember, setIsDeletingMember] = useState(false);
-
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -237,215 +225,235 @@ const AdminDashboard = () => {
 
   const loadTeams = useCallback(async () => {
     setIsLoadingTeams(true);
-    try {
-      const data = await getAdminTeams();
-      setTeams(data);
-    } catch {
-      showToast('팀 정보를 불러오지 못했습니다.', 'error');
-    } finally {
-      setIsLoadingTeams(false);
-    }
+    try { const data = await getAdminTeams(); setTeams(data); }
+    catch { showToast('팀 정보를 불러오지 못했습니다.', 'error'); }
+    finally { setIsLoadingTeams(false); }
   }, []);
 
   const loadPhotos = useCallback(async () => {
     setIsLoadingPhotos(true);
-    try {
-      const data = await getAdminPhotos();
-      setPhotos(data);
-    } catch {
-      showToast('사진 목록을 불러오지 못했습니다.', 'error');
-    } finally {
-      setIsLoadingPhotos(false);
-    }
+    try { const data = await getAdminPhotos(); setPhotos(data); }
+    catch { showToast('사진 목록을 불러오지 못했습니다.', 'error'); }
+    finally { setIsLoadingPhotos(false); }
   }, []);
 
-  useEffect(() => {
-    loadTeams();
-    loadPhotos();
-  }, [loadTeams, loadPhotos]);
+  useEffect(() => { loadTeams(); loadPhotos(); }, [loadTeams, loadPhotos]);
 
-  /* 사진 삭제 확인 */
   const handleDeletePhotoConfirm = async () => {
     if (!pendingDeletePhoto) return;
     setIsDeletingPhoto(true);
     try {
       await deletePhoto(pendingDeletePhoto.id, pendingDeletePhoto.url);
       setPhotos(prev => prev.filter(p => p.id !== pendingDeletePhoto.id));
-      showToast('사진이 삭제되었습니다. 칸 상태와 빙고 현황이 자동 반영됩니다.');
+      showToast('사진이 삭제되었습니다.');
       await loadTeams();
-    } catch {
-      showToast('사진 삭제에 실패했습니다.', 'error');
-    } finally {
-      setIsDeletingPhoto(false);
-      setPendingDeletePhoto(null);
-    }
+    } catch { showToast('사진 삭제에 실패했습니다.', 'error'); }
+    finally { setIsDeletingPhoto(false); setPendingDeletePhoto(null); }
   };
 
-  /* 참가자 삭제 확인 */
   const handleDeleteMemberConfirm = async () => {
     if (!pendingDeleteMember) return;
     setIsDeletingMember(true);
     try {
       await deleteMember(pendingDeleteMember.member.id);
-      setTeams(prev => prev.map(t => ({
-        ...t,
-        members: t.members.filter(m => m.id !== pendingDeleteMember.member.id),
-      })));
+      setTeams(prev => prev.map(t => ({ ...t, members: t.members.filter(m => m.id !== pendingDeleteMember.member.id) })));
       showToast(`${pendingDeleteMember.member.name} 참가자가 삭제되었습니다.`);
-    } catch {
-      showToast('참가자 삭제에 실패했습니다.', 'error');
-    } finally {
-      setIsDeletingMember(false);
-      setPendingDeleteMember(null);
-    }
+    } catch { showToast('참가자 삭제에 실패했습니다.', 'error'); }
+    finally { setIsDeletingMember(false); setPendingDeleteMember(null); }
   };
 
   const totalMembers = teams.reduce((acc, t) => acc + t.members.length, 0);
-  const totalPhotos = photos.length;
+  const successTeams = teams.filter(t => t.completedLines >= 2).length;
+
+  const stats = [
+    { icon: Users, label: '참가자', value: `${totalMembers}명`, color: 'text-primary', bg: 'bg-primary/10' },
+    { icon: Crown, label: '총 조', value: `${teams.length}개`, color: 'text-amber-600', bg: 'bg-amber-100/60' },
+    { icon: ImagePlus, label: '업로드 사진', value: `${photos.length}장`, color: 'text-primary', bg: 'bg-primary/10' },
+    { icon: Trophy, label: '2줄 달성', value: `${successTeams}개조`, color: 'text-yellow-600', bg: 'bg-yellow-100/60' },
+  ];
 
   return (
-    <div className="min-h-screen py-4 sm:py-6 px-3 sm:px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-card rounded-2xl shadow-2xl overflow-hidden border border-border">
+    <div className="min-h-screen py-4 sm:py-8 px-3 sm:px-4">
+      <div className="max-w-2xl mx-auto">
 
-          {/* 헤더 */}
-          <div className="bg-gradient-to-r from-[#4A2E1A] to-[#7A4A2A] px-5 py-4">
+        {/* 헤더 카드 */}
+        <div className="glass-card-premium rounded-3xl overflow-hidden mb-4 relative">
+          {/* 상단 그라데이션 바 */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+
+          <div className="bg-gradient-to-r from-[#3A1E08]/90 to-[#6A3818]/80 backdrop-blur-sm px-5 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-black text-white">관리자 대시보드</h1>
-                <p className="text-xs text-white/60">ADMIN001</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
+                  <Shield className="w-5 h-5 text-white/90" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-black text-white leading-tight">관리자 대시보드</h1>
+                  <div className="flex items-center gap-1.5">
+                    <img src={mapaeImage} alt="" className="w-3.5 h-3.5 object-contain opacity-80" />
+                    <p className="text-[11px] text-white/50 font-medium">ADMIN001</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Link to="/">
-                  <Button variant="ghost" size="sm" className="rounded-full text-white/70 hover:text-white hover:bg-white/10 font-bold">
-                    <ArrowLeft className="w-4 h-4 mr-1" /> 게임
+                  <Button variant="ghost" size="sm"
+                    className="rounded-2xl text-white/70 hover:text-white hover:bg-white/10 font-bold text-xs px-3">
+                    <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 게임
                   </Button>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={signOut} className="rounded-full text-white/50 hover:text-white hover:bg-white/10 font-bold">
-                  <LogOut className="w-4 h-4 mr-1.5" /> 로그아웃
+                <Button variant="ghost" size="sm" onClick={signOut}
+                  className="rounded-2xl text-white/50 hover:text-white hover:bg-white/10 font-bold text-xs px-3">
+                  <LogOut className="w-3.5 h-3.5 mr-1" /> 로그아웃
                 </Button>
               </div>
             </div>
           </div>
+        </div>
 
+        {/* 통계 카드 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          {stats.map((stat, i) => (
+            <div key={i} className="glass-card rounded-2xl p-3.5 flex flex-col gap-2">
+              <div className={`w-8 h-8 rounded-xl ${stat.bg} flex items-center justify-center`}>
+                <stat.icon className={`w-4 h-4 ${stat.color}`} />
+              </div>
+              <div>
+                <p className="text-[11px] text-muted-foreground font-medium">{stat.label}</p>
+                <p className="text-xl font-black text-foreground">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 메인 콘텐츠 카드 */}
+        <div className="glass-card-premium rounded-3xl overflow-hidden">
           <div className="p-4 sm:p-5">
-            {/* 통계 */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+
+            {/* 탭 */}
+            <div className="grid grid-cols-2 gap-1 bg-black/5 rounded-2xl p-1 mb-4">
               {[
-                { icon: Users, label: '참가자', value: `${totalMembers}명`, color: 'text-primary' },
-                { icon: Crown, label: '총 조', value: `${teams.length}개`, color: 'text-amber-600' },
-                { icon: ImagePlus, label: '업로드 사진', value: `${totalPhotos}장`, color: 'text-primary' },
-                { icon: Crown, label: '2줄 달성', value: `${teams.filter(t => t.completedLines >= 2).length}개조`, color: 'text-yellow-600' },
-              ].map((stat, i) => (
-                <div key={i} className="rounded-xl border border-border bg-muted/20 p-3">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
-                    <span className="text-[11px] text-muted-foreground">{stat.label}</span>
-                  </div>
-                  <p className="text-xl font-black text-foreground">{stat.value}</p>
-                </div>
+                { key: 'teams', label: '조별 현황' },
+                { key: 'photos', label: `사진 검토 (${photos.length})` },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as 'teams' | 'photos')}
+                  className={`rounded-xl py-2 text-sm font-bold transition-all ${
+                    activeTab === tab.key
+                      ? 'bg-white shadow-sm text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
 
-            {/* 탭 */}
-            <div className="grid grid-cols-2 gap-1 bg-muted/30 rounded-xl p-1 mb-4">
-              <button
-                onClick={() => setActiveTab('teams')}
-                className={`rounded-lg py-2 text-body-sm font-bold transition-colors ${activeTab === 'teams' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                조별 현황
-              </button>
-              <button
-                onClick={() => setActiveTab('photos')}
-                className={`rounded-lg py-2 text-body-sm font-bold transition-colors ${activeTab === 'photos' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                사진 검토 ({totalPhotos})
-              </button>
-            </div>
-
-            {/* 새로고침 버튼 */}
+            {/* 새로고침 */}
             <div className="flex justify-end mb-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full text-caption gap-1.5"
+              <button
                 onClick={() => { loadTeams(); loadPhotos(); }}
                 disabled={isLoadingTeams || isLoadingPhotos}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold text-muted-foreground hover:text-foreground bg-white/50 hover:bg-white/80 border border-white/60 transition-all disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${(isLoadingTeams || isLoadingPhotos) ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3 h-3 ${(isLoadingTeams || isLoadingPhotos) ? 'animate-spin' : ''}`} />
                 새로고침
-              </Button>
+              </button>
             </div>
 
             {/* 조별 현황 탭 */}
             {activeTab === 'teams' && (
               <div className="space-y-2">
                 {isLoadingTeams ? (
-                  <div className="flex justify-center py-10">
-                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    <p className="text-xs text-muted-foreground font-medium">데이터 불러오는 중...</p>
                   </div>
                 ) : teams.map(team => {
                   const isExpanded = expandedTeam === team.id;
-                  const percent = team.totalMissions > 0 ? Math.round(team.completedMissions / team.totalMissions * 100) : 0;
+                  const percent = team.totalMissions > 0
+                    ? Math.round(team.completedMissions / team.totalMissions * 100) : 0;
+                  const teamNum = team.name.replace(/[^0-9]/g, '');
+                  const isSuccess = team.completedLines >= 2;
+
                   return (
-                    <div key={team.id} className="rounded-xl border border-border overflow-hidden bg-card">
+                    <div key={team.id}
+                      className="rounded-2xl border border-white/50 overflow-hidden bg-white/40 backdrop-blur-sm shadow-sm">
                       <div
-                        className="p-3.5 cursor-pointer hover:bg-muted/20 transition-colors"
+                        className="p-3.5 cursor-pointer hover:bg-white/30 transition-colors"
                         onClick={() => setExpandedTeam(isExpanded ? null : team.id)}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-gradient-to-br from-[#E8602A] to-[#A83310] rounded-lg flex items-center justify-center shadow-sm">
-                              <span className="text-xs font-black text-white">{team.name.replace(/[^0-9]/g, '')}</span>
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* 팀 번호 배지 */}
+                            <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center shadow-sm">
+                              <span className="text-sm font-black text-white">{teamNum}</span>
                             </div>
-                            <div>
-                              <p className="text-body font-bold text-foreground">{team.name}</p>
-                              <p className="text-caption text-muted-foreground">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm font-black text-foreground">{team.name}</p>
+                                {isSuccess && (
+                                  <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-sm">
+                                    <Trophy className="w-2.5 h-2.5" /> 2줄 달성
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
                                 {team.completedMissions}/{team.totalMissions}칸 · {team.completedLines}줄 · 사진 {team.photoCount}장 · 참가자 {team.members.length}명
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {team.completedLines >= 2 && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
-                                2줄 달성!
-                              </span>
-                            )}
-                            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-xs font-black text-primary">{percent}%</span>
+                            {isExpanded
+                              ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                              : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                           </div>
                         </div>
 
                         {/* 진행률 바 */}
-                        <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div className="mt-2.5 h-1.5 rounded-full bg-black/8 overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-primary to-orange-400 transition-all duration-500"
+                            className="h-full rounded-full bg-gradient-to-r from-primary to-amber-400 transition-all duration-700"
                             style={{ width: `${percent}%` }}
                           />
                         </div>
                       </div>
 
+                      {/* 확장 영역 */}
                       {isExpanded && (
-                        <div className="border-t border-border p-3.5">
-                          <p className="text-body-sm font-bold text-foreground mb-2">
+                        <div className="border-t border-white/40 p-3.5 bg-white/20">
+                          <p className="text-xs font-black text-foreground mb-2 flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-primary" />
                             조원 ({team.members.length}명)
                           </p>
                           <div className="space-y-1.5 mb-3">
                             {team.members.length === 0 ? (
-                              <p className="text-caption text-muted-foreground">아직 참가자가 없습니다.</p>
+                              <p className="text-xs text-muted-foreground py-2 text-center">아직 참가자가 없습니다.</p>
                             ) : team.members.map(m => (
-                              <div key={m.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
+                              <div key={m.id}
+                                className="flex items-center justify-between p-2.5 rounded-xl bg-white/50 border border-white/60">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className="text-body-sm text-foreground font-medium truncate">{m.name}</span>
-                                  <span className="text-caption text-muted-foreground truncate hidden sm:inline">{m.school} · {m.major}</span>
+                                  <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                    <span className="text-[10px] font-black text-primary">
+                                      {m.name.charAt(0)}
+                                    </span>
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-black text-foreground truncate">{m.name}</p>
+                                    <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
+                                      {m.school} · {m.major}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <span className="text-caption text-muted-foreground">{m.cohort}</span>
+                                <div className="flex items-center gap-2 shrink-0 ml-2">
+                                  <span className="text-[10px] font-bold text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
+                                    {m.cohort}
+                                  </span>
                                   <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setPendingDeleteMember({ member: m, teamName: team.name });
-                                    }}
-                                    className="w-6 h-6 rounded-full bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors"
+                                    onClick={e => { e.stopPropagation(); setPendingDeleteMember({ member: m, teamName: team.name }); }}
+                                    className="w-6 h-6 rounded-xl bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors"
                                     title="참가자 삭제"
                                   >
                                     <UserX className="w-3.5 h-3.5 text-destructive" />
@@ -454,18 +462,13 @@ const AdminDashboard = () => {
                               </div>
                             ))}
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="rounded-full text-caption gap-1.5"
-                            onClick={() => {
-                              setFilterTeamId(team.id);
-                              setActiveTab('photos');
-                            }}
+                          <button
+                            onClick={() => { setFilterTeamId(team.id); setActiveTab('photos'); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-all"
                           >
                             <ImagePlus className="w-3.5 h-3.5" />
                             이 조 사진 보기
-                          </Button>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -489,7 +492,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* 사진 삭제 확인 모달 */}
+      {/* 모달 */}
       {pendingDeletePhoto && (
         <DeletePhotoModal
           photo={pendingDeletePhoto}
@@ -498,8 +501,6 @@ const AdminDashboard = () => {
           isDeleting={isDeletingPhoto}
         />
       )}
-
-      {/* 참가자 삭제 확인 모달 */}
       {pendingDeleteMember && (
         <DeleteMemberModal
           member={pendingDeleteMember.member}
@@ -510,10 +511,10 @@ const AdminDashboard = () => {
         />
       )}
 
-      {/* 토스트 알림 */}
+      {/* 토스트 */}
       {toast && (
-        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-white text-body-sm font-bold animate-bounce-in ${
-          toast.type === 'success' ? 'bg-green-600' : 'bg-destructive'
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-5 py-2.5 rounded-full shadow-xl text-white text-sm font-bold animate-bounce-in backdrop-blur-sm ${
+          toast.type === 'success' ? 'bg-green-600/90' : 'bg-destructive/90'
         }`}>
           {toast.type === 'error' && <X className="w-4 h-4" />}
           {toast.msg}
@@ -530,7 +531,10 @@ const Admin = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-[3px] border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-[3px] border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground font-medium">로딩 중...</p>
+        </div>
       </div>
     );
   }
