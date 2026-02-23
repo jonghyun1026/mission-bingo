@@ -572,3 +572,37 @@
   background-size: 400% 400%;
   animation: allCompleteRainbow 3s ease infinite;
 }
+
+/* ── 마패 축하 모달 전용 애니메이션 ── */
+@keyframes mapaePop {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-4deg); }
+  60%  { opacity: 1; transform: scale(1.06) rotate(1deg); }
+  80%  { transform: scale(0.97) rotate(-0.5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes mapaeFloat {
+  0%   { opacity: 0; transform: translateY(30px) scale(0.8); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes floatMapae {
+  0%, 100% { transform: translateY(0) rotate(-2deg) scale(1); }
+  50%       { transform: translateY(-12px) rotate(2deg) scale(1.03); }
+}
+
+@keyframes rankReveal {
+  0%   { opacity: 0; transform: translateY(-18px) scale(0.85); }
+  60%  { opacity: 1; transform: translateY(3px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes shockwaveExpand {
+  0%   { transform: scale(0); opacity: 1; }
+  100% { transform: scale(14); opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

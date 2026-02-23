@@ -283,6 +283,7 @@ export const BingoBoard: React.FC = () => {
         <CelebrationModal
           type={celebrationData.type}
           lineCount={celebrationData.lineCount}
+          rank={myRank}
           onClose={() => setCelebrationData((prev) => ({ ...prev, show: false }))}
         />
       )}

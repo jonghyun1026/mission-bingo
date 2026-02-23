@@ -390,7 +390,7 @@ const AdminDashboard = () => {
                       {sortedTeams.filter(t => t.rank !== null).map(team => {
                         const rc = rankColors[team.rank!] || rankColors[3];
                         const time = team.secondLineCompletedAt
-                          ? new Date(team.secondLineCompletedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                          ? new Date(team.secondLineCompletedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
                           : '';
                         return (
                           <div key={team.id} className="flex items-center gap-2.5">

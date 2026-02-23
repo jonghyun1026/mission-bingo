@@ -144,7 +144,7 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
                       const rs = RANK_STYLE[team.rank!];
                       const isMine = team.id === currentTeamId;
                       const time = team.secondLineCompletedAt
-                        ? new Date(team.secondLineCompletedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                        ? new Date(team.secondLineCompletedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
                         : '';
                       return (
                         <div key={team.id}
@@ -159,7 +159,7 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
                               {team.name}
                               {isMine && <span className="ml-1.5 text-[10px] font-black px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">내 조</span>}
                             </p>
-                            {time && <p className="text-[10px] text-muted-foreground mt-0.5">달성 시각 {time}</p>}
+                            {time && <p className="text-[10px] text-muted-foreground mt-0.5">달성 {time}</p>}
                           </div>
                           <img src={mapaeImage} alt="" className="w-5 h-5 object-contain shrink-0" />
                         </div>
