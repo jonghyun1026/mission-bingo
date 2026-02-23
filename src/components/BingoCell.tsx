@@ -58,11 +58,11 @@ export const BingoCell: React.FC<BingoCellProps> = ({
       {/* ══ 황금 줄 칸 ══ */}
       {isGold && (
         <>
-          <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full">
-            <div className="flex items-center justify-center rounded-full w-6 h-6 sm:w-7 sm:h-7 bg-white/50 border border-white/60">
-              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A1E00] stroke-[3]" />
+          <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full overflow-hidden">
+            <div className="flex items-center justify-center rounded-full w-5 h-5 sm:w-6 sm:h-6 shrink-0 bg-white/50 border border-white/60">
+              <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#4A1E00] stroke-[3]" />
             </div>
-            <span className="text-[8.5px] sm:text-[10px] font-black text-[#4A1E00] leading-tight break-keep text-center w-full px-0.5">
+            <span className="text-[7.5px] sm:text-[9px] font-black text-[#4A1E00] leading-tight text-center w-full px-0.5 overflow-hidden line-clamp-3 break-words">
               {mission.isBonus ? 'BONUS ✓' : mission.title}
             </span>
           </div>
@@ -80,11 +80,11 @@ export const BingoCell: React.FC<BingoCellProps> = ({
       {/* ══ 일반 완료 칸 (줄 아님) ══ */}
       {isCompleted && !isBonus && !isGold && (
         <>
-          <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full">
-            <div className="flex items-center justify-center rounded-full mb-0.5 w-6 h-6 sm:w-7 sm:h-7 bg-white/50 border border-white/60">
-              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#5A2010] stroke-[3]" />
+          <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full overflow-hidden">
+            <div className="flex items-center justify-center rounded-full mb-0.5 w-5 h-5 sm:w-6 sm:h-6 shrink-0 bg-white/50 border border-white/60">
+              <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#5A2010] stroke-[3]" />
             </div>
-            <span className="text-[8.5px] sm:text-[10px] font-black text-[#5A2010] leading-tight break-keep text-center w-full px-0.5">
+            <span className="text-[7.5px] sm:text-[9px] font-black text-[#5A2010] leading-tight text-center w-full px-0.5 overflow-hidden line-clamp-3 break-words">
               {mission.title}
             </span>
           </div>
@@ -133,17 +133,17 @@ export const BingoCell: React.FC<BingoCellProps> = ({
 
       {/* ══ 미완료 일반 칸 ══ */}
       {!isBonus && !isCompleted && (
-        <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full">
+        <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full overflow-hidden">
           <div className={cn(
-            'flex items-center justify-center rounded-full mb-0.5 transition-all duration-200',
-            'w-6 h-6 sm:w-7 sm:h-7',
+            'flex items-center justify-center rounded-full mb-0.5 shrink-0 transition-all duration-200',
+            'w-5 h-5 sm:w-6 sm:h-6',
             'bg-[#E8462A]/10 group-hover:bg-[#E8462A]/20',
           )}>
-            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#A83018] group-hover:text-[#7A1808] transition-colors" />
+            <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#A83018] group-hover:text-[#7A1808] transition-colors" />
           </div>
           <span className={cn(
-            'font-bold leading-snug break-keep text-center w-full transition-colors',
-            'text-[8.5px] sm:text-[10px]',
+            'font-bold leading-tight text-center w-full transition-colors overflow-hidden line-clamp-3 break-words',
+            'text-[7.5px] sm:text-[9px]',
             'text-[#5A1E0E] group-hover:text-[#3D1008]',
           )}>
             {mission.title}

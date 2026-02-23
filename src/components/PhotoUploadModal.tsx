@@ -300,8 +300,8 @@ export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClos
             </div>
           )}
 
-          <input ref={fileInputRef} type="file" accept="image/*" multiple capture="environment" onChange={handleFileSelect} className="hidden" />
-          <input ref={replaceInputRef} type="file" accept="image/*" capture="environment" onChange={handleReplaceFile} className="hidden" />
+          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
+          <input ref={replaceInputRef} type="file" accept="image/*" onChange={handleReplaceFile} className="hidden" />
 
           <div
             onClick={() => fileInputRef.current?.click()}
@@ -324,7 +324,7 @@ export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClos
             </div>
             <div className="text-center">
               <p className="text-body font-bold text-foreground">
-                {previewUrls.length > 0 || existingPhotos.length > 0 ? '사진 더 추가하기' : '사진 찍기 또는 선택'}
+                {previewUrls.length > 0 || existingPhotos.length > 0 ? '사진 더 추가하기' : '갤러리에서 사진 선택'}
               </p>
               <p className="text-caption text-muted-foreground">여러 장의 사진을 선택할 수 있습니다</p>
             </div>
