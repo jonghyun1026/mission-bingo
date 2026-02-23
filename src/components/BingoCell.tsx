@@ -3,7 +3,6 @@ import { BingoCell as BingoCellType } from '@/types/game';
 import {
   Star, Check, Camera, Users, Utensils, Zap,
   Smile, Heart, Coffee, MapPin, Mountain, ShoppingBag,
-  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +32,7 @@ export const BingoCell: React.FC<BingoCellProps> = ({
   isInCompletedLine,
   isJustCompleted,
 }) => {
-  const { mission, isCompleted } = cell;
+  const { mission, isCompleted, isBonusAwarded } = cell;
   const isBonus = mission.isBonus;
   const Icon = getMissionIcon(mission.title);
 
@@ -59,100 +58,59 @@ export const BingoCell: React.FC<BingoCellProps> = ({
       {/* ══ 황금 줄 칸 ══ */}
       {isGold && (
         <>
-          {/* 황금 광택 사선 패턴 */}
-          <div
-            className="absolute inset-0 opacity-[0.12] pointer-events-none"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(45deg, #fff 0px, #fff 1px, transparent 1px, transparent 7px)',
-            }}
-          />
-          {/* 내부 빛 번짐 */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(ellipse at 50% 30%, rgba(255,255,220,0.35) 0%, transparent 65%)',
-            }}
-          />
-          {/* 하단 좌우 심화 그림자 */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'linear-gradient(180deg, transparent 50%, rgba(140,90,0,0.18) 100%)',
-            }}
-          />
-
-          {/* 컨텐츠 */}
           <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full">
-            <div className="flex items-center justify-center rounded-full w-6 h-6 sm:w-7 sm:h-7 bg-white/30 border border-yellow-100/60 shadow-sm">
-              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-900 stroke-[3.5]" />
+            <div className="flex items-center justify-center rounded-full w-6 h-6 sm:w-7 sm:h-7 bg-white/50 border border-white/60">
+              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A1E00] stroke-[3]" />
             </div>
-            <span className="text-[8.5px] sm:text-[10px] font-black text-yellow-950/90 leading-tight break-keep text-center w-full drop-shadow-sm px-0.5">
+            <span className="text-[8.5px] sm:text-[10px] font-black text-[#4A1E00] leading-tight break-keep text-center w-full px-0.5">
               {mission.isBonus ? 'BONUS ✓' : mission.title}
             </span>
           </div>
-
-          {/* 좌상단 반짝임 */}
-          <Sparkles className="absolute top-1 left-1 w-2.5 h-2.5 text-yellow-800/50 pointer-events-none animate-sparkle" />
-          {/* 우하단 반짝임 */}
-          <Sparkles className="absolute bottom-1 right-1 w-2 h-2 text-yellow-800/40 pointer-events-none animate-sparkle" style={{ animationDelay: '0.6s' }} />
+          {isBonusAwarded && (
+            <div className="absolute top-1 left-1 z-20">
+              <span className="flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-white/50 border border-white/60">
+                <Star className="w-2 h-2 text-[#4A1E00] fill-[#4A1E00]" />
+                <span className="text-[7px] font-black text-[#4A1E00] leading-none">+보너스</span>
+              </span>
+            </div>
+          )}
         </>
       )}
 
       {/* ══ 일반 완료 칸 (줄 아님) ══ */}
       {isCompleted && !isBonus && !isGold && (
         <>
-          <div
-            className="absolute inset-0 opacity-[0.07] pointer-events-none"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(45deg, #fff 0px, #fff 1px, transparent 1px, transparent 8px)',
-            }}
-          />
           <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full">
-            <div className="flex items-center justify-center rounded-full mb-0.5 w-6 h-6 sm:w-7 sm:h-7 bg-white/20 border border-white/40">
-              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white stroke-[3.5]" />
+            <div className="flex items-center justify-center rounded-full mb-0.5 w-6 h-6 sm:w-7 sm:h-7 bg-white/50 border border-white/60">
+              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#5A2010] stroke-[3]" />
             </div>
-            <span className="text-[8.5px] sm:text-[10px] font-black text-white/95 leading-tight break-keep text-center w-full drop-shadow-sm px-0.5">
+            <span className="text-[8.5px] sm:text-[10px] font-black text-[#5A2010] leading-tight break-keep text-center w-full px-0.5">
               {mission.title}
             </span>
           </div>
-          <Sparkles className="absolute bottom-1 right-1 w-2.5 h-2.5 text-white/30 pointer-events-none" />
+          {isBonusAwarded && (
+            <div className="absolute top-1 left-1 z-20">
+              <span className="flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-white/50 border border-white/60">
+                <Star className="w-2 h-2 text-[#5A2010] fill-[#5A2010]" />
+                <span className="text-[7px] font-black text-[#5A2010] leading-none">+보너스</span>
+              </span>
+            </div>
+          )}
         </>
       )}
 
       {/* ══ 보너스 완료 (줄 미포함) ══ */}
       {isBonus && isCompleted && !isGold && (
         <>
-          {/* 반짝이 사선 패턴 */}
-          <div
-            className="absolute inset-0 opacity-[0.15] pointer-events-none"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(45deg, #fff 0px, #fff 1px, transparent 1px, transparent 6px)',
-            }}
-          />
-          {/* 내부 빛 */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse at 50% 30%, rgba(255,255,200,0.45) 0%, transparent 65%)',
-            }}
-          />
           <div className="relative z-10 flex flex-col items-center justify-center gap-0.5 px-1 w-full">
-            {/* 별 + 체크 겹치기 */}
             <div className="relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 mb-0.5">
-              <Star className="absolute w-7 h-7 sm:w-8 sm:h-8 text-yellow-300 fill-yellow-300 drop-shadow-lg" />
-              <Check className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-800 stroke-[3.5] z-10" />
+              <Star className="absolute w-7 h-7 sm:w-8 sm:h-8 text-[#E09858] fill-[#E09858]" />
+              <Check className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 text-white stroke-[3.5] z-10" />
             </div>
-            <span className="text-[8.5px] sm:text-[10px] font-black text-white leading-tight break-keep text-center w-full drop-shadow-sm px-0.5 tracking-tight">
+            <span className="text-[8.5px] sm:text-[10px] font-black text-[#3A1A00] leading-tight break-keep text-center w-full px-0.5 tracking-tight">
               BONUS ✓
             </span>
           </div>
-          <Sparkles className="absolute top-1 left-1 w-2.5 h-2.5 text-yellow-200/70 pointer-events-none animate-sparkle" />
-          <Sparkles className="absolute bottom-1 right-1 w-2 h-2 text-yellow-200/60 pointer-events-none animate-sparkle" style={{ animationDelay: '0.5s' }} />
         </>
       )}
 

@@ -3,12 +3,12 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Shield, User, Lock, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const AdminLoginForm: React.FC = () => {
   const { signIn } = useAdminAuth();
-  const [email, setEmail] = useState('');
+  const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +17,7 @@ export const AdminLoginForm: React.FC = () => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    const { error: signInError } = await signIn(email, password);
+    const { error: signInError } = await signIn(adminId, password);
     if (signInError) setError(signInError);
     setIsLoading(false);
   };
@@ -46,11 +46,11 @@ export const AdminLoginForm: React.FC = () => {
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-body-sm font-medium text-foreground/65">이메일</Label>
+                <Label htmlFor="adminId" className="text-body-sm font-medium text-foreground/65">아이디</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="email" type="email" placeholder="admin@example.com" value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="adminId" type="text" placeholder="관리자 아이디" value={adminId}
+                    onChange={(e) => setAdminId(e.target.value)}
                     className="h-11 pl-10 rounded-lg border-border bg-muted/30 focus:bg-card" required />
                 </div>
               </div>

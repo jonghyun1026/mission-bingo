@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (Vercel에서 직접 설정)
+.env
+.env.local
+.env.production
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

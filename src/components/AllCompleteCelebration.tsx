@@ -236,8 +236,8 @@ export const AllCompleteCelebration: React.FC<Props> = ({ onClose }) => {
               <span
                 key={i}
                 className="absolute font-black pointer-events-none"
-                style={{ color: i % 2 === 0 ? '#F5A623' : '#FAC860' }}
                 style={{
+                  color: i % 2 === 0 ? '#F5A623' : '#FAC860',
                   left: `${8 + (i * 7.5) % 85}%`,
                   top: `${5 + (i * 13) % 40}%`,
                   fontSize: `${10 + (i % 4) * 4}px`,

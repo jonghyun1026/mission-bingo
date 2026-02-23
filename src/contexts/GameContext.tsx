@@ -8,6 +8,7 @@ import {
   getTeamSnapshot,
   getTeamGallery,
   completeCell, 
+  deletePhoto,
   updateTeamLinesWithRank,
   Team as ApiTeam,
   BoardCell,
@@ -38,6 +39,7 @@ interface GameContextType {
   logout: () => void;
   uploadPhoto: (cellId: number, photos: string[]) => void;
   removePhoto: (cellId: number, photoIndex: number) => void;
+  deleteUserPhoto: (cellId: number, photoId: string, storagePath?: string) => Promise<void>;
   checkBingoLines: () => CompletedLine[];
   fetchTeams: () => Promise<void>;
   fetchTeamMembers: () => Promise<void>;
@@ -50,10 +52,7 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const createBoardFromDb = (cells: BoardCell[], photos: Photo[]): BingoCell[] => {
   return cells.map((cell) => {
-    const cellPhotos = photos
-      .filter((p) => p.cell_id === cell.id)
-      .map((p) => p.public_url);
-    
+    const cellPhotoObjects = photos.filter((p) => p.cell_id === cell.id);
     return {
       id: cell.position,
       dbCellId: cell.id,
@@ -63,8 +62,14 @@ const createBoardFromDb = (cells: BoardCell[], photos: Photo[]): BingoCell[] => 
         description: cell.missions.description,
         isBonus: cell.missions.is_free_cell,
       },
-      photos: cellPhotos,
+      photos: cellPhotoObjects.map((p) => p.public_url),
+      photoMeta: cellPhotoObjects.map((p) => ({
+        id: p.id,
+        url: p.public_url,
+        storagePath: p.storage_path,
+      })),
       isCompleted: cell.is_completed,
+      isBonusAwarded: !!cell.bonus_awarded_by,
     };
   });
 };
@@ -184,7 +189,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setBingoBoard((prev) =>
       prev.map((cell) =>
         cell.id === cellId
-          ? { ...cell, photos: [...cell.photos, ...photos], isCompleted: true }
+          ? {
+              ...cell,
+              photos: [...cell.photos, ...photos],
+              photoMeta: [...(cell.photoMeta ?? []), ...photos.map((url) => ({ id: '', url }))],
+              isCompleted: true,
+            }
           : cell
       )
     );
@@ -195,14 +205,25 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       prev.map((cell) => {
         if (cell.id !== cellId) return cell;
         const newPhotos = cell.photos.filter((_, i) => i !== photoIndex);
+        const newMeta = cell.photoMeta.filter((_, i) => i !== photoIndex);
         return {
           ...cell,
           photos: newPhotos,
+          photoMeta: newMeta,
           isCompleted: newPhotos.length > 0,
         };
       })
     );
   }, []);
+
+  const deleteUserPhoto = useCallback(async (cellId: number, photoId: string, storagePath?: string) => {
+    await deletePhoto(photoId, storagePath || '');
+    if (!user) return;
+    const refreshed = await getBoard(user.teamDbId);
+    const newBoard = createBoardFromDb(refreshed.cells, refreshed.photos || []);
+    setBingoBoard(newBoard);
+    setCompletedLines(computeAllLines(newBoard));
+  }, [user, computeAllLines]);
 
   const syncCellCompletion = useCallback(async (
     cellId: number,
@@ -334,6 +355,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         uploadPhoto,
         removePhoto,
+        deleteUserPhoto,
         checkBingoLines,
         fetchTeams,
         fetchTeamMembers,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useGame } from '@/contexts/GameContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, Gamepad2, Sparkles } from 'lucide-react';
+import { AlertCircle, Gamepad2, Sparkles, Shield } from 'lucide-react';
 import mapaeImage from '@/assets/mapae-red.png';
 
 const cohortOptions = Array.from({ length: 11 }, (_, i) => `${i + 6}기`);
@@ -175,10 +176,19 @@ export const LoginForm: React.FC = () => {
             </div>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-border/30 text-center relative">
+          <div className="mt-6 pt-5 border-t border-border/30 text-center relative space-y-3">
             <p className="text-xs text-muted-foreground bg-accent/8 inline-block px-4 py-1.5 rounded-full font-medium border border-accent/15">
               💡 같은 조 친구들과 함께 빙고를 완성하세요!
             </p>
+            <div>
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+              >
+                <Shield className="w-3 h-3" />
+                관리자 페이지
+              </Link>
+            </div>
           </div>
         </div>
       </div>

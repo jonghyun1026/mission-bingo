@@ -71,6 +71,7 @@ export interface BoardCell {
   is_completed: boolean;
   mission_id: number;
   missions: Mission;
+  bonus_awarded_by?: string | null;
 }
 
 export interface TeamMember {
@@ -86,6 +87,7 @@ export interface Photo {
   id: string;
   cell_id: string;
   public_url: string;
+  storage_path?: string;
 }
 
 export interface TeamSnapshot {
@@ -250,6 +252,10 @@ export async function getAdminPhotos(teamId?: string): Promise<AdminPhoto[]> {
 
 export async function deletePhoto(photoId: string, storagePath: string): Promise<void> {
   await callGameApi('delete_photo', { photoId, storagePath });
+}
+
+export async function deleteMember(memberId: string): Promise<void> {
+  await callGameApi('delete_member', { memberId });
 }
 
 // Storage에 사진 업로드

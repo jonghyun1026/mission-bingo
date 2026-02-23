@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useGame } from '@/contexts/GameContext';
 import { BingoCell } from './BingoCell';
 import { PhotoUploadModal } from './PhotoUploadModal';
@@ -32,6 +32,7 @@ export const BingoBoard: React.FC = () => {
   const [showOtherTeamsModal, setShowOtherTeamsModal] = useState(false);
   const [justCompletedCellIds, setJustCompletedCellIds] = useState<number[]>([]);
   const prevCompletedCellIdsRef = useRef<Set<number>>(new Set());
+  const justCompletedTimersRef = useRef<Map<number, number>>(new Map());
   const [celebrationQueue, setCelebrationQueue] = useState<Array<{ type: 'line' | 'complete'; lineCount: number }>>([]);
   // 이미 축하한 총 줄 수를 기억 (새로 달성한 줄에만 반응)
   const celebratedLineCountRef = useRef<number>(0);
@@ -55,6 +56,14 @@ export const BingoBoard: React.FC = () => {
     }
   }, [completedCount, bingoBoard.length]);
 
+  // 언마운트 시 진행 중인 "미션 성공" 타이머 전체 정리
+  useEffect(() => {
+    return () => {
+      justCompletedTimersRef.current.forEach((id) => clearTimeout(id));
+      justCompletedTimersRef.current.clear();
+    };
+  }, []);
+
   useEffect(() => { if (showTeamModal) fetchTeamMembers(); }, [showTeamModal, fetchTeamMembers]);
   useEffect(() => {
     if (!showOtherTeamsModal) return;
@@ -62,14 +71,21 @@ export const BingoBoard: React.FC = () => {
     fetchTeamGallery().catch(console.error);
   }, [showOtherTeamsModal, fetchTeamSnapshot, fetchTeamGallery]);
 
-  const formattedTeamMembers = teamMembers.map(m => ({
+  const formattedTeamMembers = useMemo(() => teamMembers.map(m => ({
     id: m.id, name: m.name, school: m.school, major: m.major, cohort: m.cohort, isOnline: true,
-  }));
+  })), [teamMembers]);
 
   useEffect(() => {
     const currentCompleted = new Set(
       bingoBoard.filter((cell) => cell.isCompleted).map((cell) => cell.id)
     );
+
+    // 초기 로드: ref를 현재 상태로만 채우고 애니메이션 없이 종료
+    if (prevCompletedCellIdsRef.current.size === 0 && currentCompleted.size > 0 && isInitialLoadRef.current) {
+      prevCompletedCellIdsRef.current = currentCompleted;
+      return;
+    }
+
     const newlyCompleted = [...currentCompleted].filter(
       (id) => !prevCompletedCellIdsRef.current.has(id)
     );
@@ -82,10 +98,18 @@ export const BingoBoard: React.FC = () => {
       return [...merged];
     });
 
-    const timeoutId = window.setTimeout(() => {
-      setJustCompletedCellIds((prev) => prev.filter((id) => !newlyCompleted.includes(id)));
-    }, 1200);
-    return () => window.clearTimeout(timeoutId);
+    // 셀마다 개별 타이머를 ref로 관리 — effect cleanup에 의존하지 않아
+    // 보드가 중간에 바뀌어도 타이머가 취소되지 않음
+    for (const id of newlyCompleted) {
+      if (justCompletedTimersRef.current.has(id)) {
+        clearTimeout(justCompletedTimersRef.current.get(id));
+      }
+      const timerId = window.setTimeout(() => {
+        setJustCompletedCellIds((prev) => prev.filter((cid) => cid !== id));
+        justCompletedTimersRef.current.delete(id);
+      }, 1200);
+      justCompletedTimersRef.current.set(id, timerId);
+    }
   }, [bingoBoard]);
 
   useEffect(() => {
@@ -134,7 +158,7 @@ export const BingoBoard: React.FC = () => {
     setShowUploadModal(true);
   };
 
-  const getCellsInCompletedLines = (): Set<number> => {
+  const cellsInCompletedLines = useMemo(() => {
     const cells = new Set<number>();
     completedLines.forEach((line: CompletedLine) => {
       if (line.type === 'row') for (let i = 0; i < 5; i++) cells.add(line.index * 5 + i + 1);
@@ -145,9 +169,7 @@ export const BingoBoard: React.FC = () => {
       }
     });
     return cells;
-  };
-
-  const cellsInCompletedLines = getCellsInCompletedLines();
+  }, [completedLines]);
 
   return (
     <div className="min-h-screen py-6 px-3 sm:px-4 flex flex-col items-center">

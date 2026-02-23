@@ -14,12 +14,20 @@ export interface Mission {
   isBonus?: boolean;
 }
 
+export interface PhotoMeta {
+  id: string;
+  url: string;
+  storagePath?: string;
+}
+
 export interface BingoCell {
   id: number;
   dbCellId?: string;
   mission: Mission;
   photos: string[];
+  photoMeta: PhotoMeta[];
   isCompleted: boolean;
+  isBonusAwarded?: boolean;
 }
 
 export interface Team {

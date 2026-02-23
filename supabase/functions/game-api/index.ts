@@ -156,6 +156,7 @@ serve(async (req) => {
           position,
           is_completed,
           mission_id,
+          bonus_awarded_by,
           missions (id, title, description, is_free_cell)
         `)
         .eq('board_id', board.id)
@@ -163,7 +164,7 @@ serve(async (req) => {
 
       const { data: photos } = await supabase
         .from('photos')
-        .select('id, cell_id, public_url')
+        .select('id, cell_id, public_url, storage_path')
 
       return new Response(
         JSON.stringify({ 
@@ -202,6 +203,7 @@ serve(async (req) => {
           position,
           is_completed,
           mission_id,
+          bonus_awarded_by,
           missions (id, title, description, is_free_cell)
         `)
         .eq('board_id', board.id)
@@ -209,7 +211,7 @@ serve(async (req) => {
 
       const { data: photos } = await supabase
         .from('photos')
-        .select('id, cell_id, public_url')
+        .select('id, cell_id, public_url, storage_path')
 
       return new Response(
         JSON.stringify({ success: true, boardId: board.id, cells, photos }),
@@ -262,7 +264,7 @@ serve(async (req) => {
           bonusAwardedCellId = randomCell.id
           await supabase
             .from('board_cells')
-            .update({ is_completed: true, completed_at: new Date().toISOString() })
+            .update({ is_completed: true, completed_at: new Date().toISOString(), bonus_awarded_by: cellId })
             .eq('id', randomCell.id)
         }
       }
@@ -495,6 +497,17 @@ serve(async (req) => {
       )
     }
 
+    // ─── 관리자: 참가자 삭제 ───
+    if (action === 'delete_member') {
+      const { memberId } = data
+      const { error: delErr } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', memberId)
+      if (delErr) throw delErr
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     // ─── 관리자: 전체 사진 목록 조회 ───
     if (action === 'get_admin_photos') {
       const { teamId } = data || {}
@@ -559,7 +572,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true, photos: result }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // ─── 관리자: 사진 삭제 (DB 레코드 + Storage 파일) ───
+    // ─── 사진 삭제 (DB 레코드 + Storage 파일, 트리거로 셀/라인 자동 재계산) ───
     if (action === 'delete_photo') {
       const { photoId, storagePath } = data
 

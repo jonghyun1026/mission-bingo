@@ -2,15 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Users, Crown, ImagePlus, ChevronDown, ChevronUp,
-  ArrowLeft, LogOut, Trash2, RefreshCw, X, AlertTriangle,
+  ArrowLeft, LogOut, Trash2, RefreshCw, X, AlertTriangle, UserX,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { AdminLoginForm } from '@/components/AdminLoginForm';
-import { getAdminTeams, getAdminPhotos, deletePhoto, AdminTeam, AdminPhoto } from '@/lib/gameApi';
+import {
+  getAdminTeams, getAdminPhotos, deletePhoto, deleteMember,
+  AdminTeam, AdminPhoto,
+} from '@/lib/gameApi';
 
-/* ───────────────────────── 삭제 확인 모달 ───────────────────────── */
-const DeleteConfirmModal: React.FC<{
+/* ───────────────────────── 사진 삭제 확인 모달 ───────────────────────── */
+const DeletePhotoModal: React.FC<{
   photo: AdminPhoto;
   onConfirm: () => void;
   onCancel: () => void;
@@ -59,6 +62,65 @@ const DeleteConfirmModal: React.FC<{
             ) : (
               <span className="flex items-center gap-1.5">
                 <Trash2 className="w-3.5 h-3.5" />
+                삭제 확인
+              </span>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ───────────────────────── 참가자 삭제 확인 모달 ───────────────────────── */
+const DeleteMemberModal: React.FC<{
+  member: { id: string; name: string; school: string; major: string; cohort: string };
+  teamName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isDeleting: boolean;
+}> = ({ member, teamName, onConfirm, onCancel, isDeleting }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+    <div className="relative w-full max-w-sm bg-card rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+      <div className="p-5">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+            <UserX className="w-5 h-5 text-destructive" />
+          </div>
+          <div>
+            <h3 className="text-body font-black text-foreground">참가자 삭제</h3>
+            <p className="text-caption text-muted-foreground">이 작업은 되돌릴 수 없습니다</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl p-3.5 mb-4 border border-border bg-muted/20">
+          <p className="text-body font-bold text-foreground">{member.name}</p>
+          <p className="text-caption text-muted-foreground">{teamName} · {member.school} · {member.major}</p>
+          <p className="text-caption text-muted-foreground">{member.cohort}</p>
+        </div>
+
+        <p className="text-caption text-muted-foreground mb-4">
+          참가자를 삭제해도 업로드된 사진과 빙고 기록은 유지됩니다.
+        </p>
+
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1 rounded-full" onClick={onCancel} disabled={isDeleting}>
+            취소
+          </Button>
+          <Button
+            className="flex-1 rounded-full bg-destructive hover:bg-destructive/90 text-white font-bold"
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <span className="flex items-center gap-1.5">
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                삭제 중...
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <UserX className="w-3.5 h-3.5" />
                 삭제 확인
               </span>
             )}
@@ -121,11 +183,13 @@ const PhotoReviewPanel: React.FC<{
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {filtered.map(photo => (
-            <div key={photo.id} className="rounded-xl overflow-hidden border border-border bg-card group relative">
+            <div key={photo.id} className="rounded-xl overflow-hidden border border-border bg-card relative">
               <img src={photo.url} alt={photo.missionTitle} className="w-full h-28 object-cover" />
+              {/* 삭제 버튼 – 항상 표시 */}
               <button
                 onClick={() => onDelete(photo)}
-                className="absolute top-1.5 right-1.5 w-7 h-7 bg-destructive/90 hover:bg-destructive rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                className="absolute top-1.5 right-1.5 w-7 h-7 bg-destructive/85 hover:bg-destructive rounded-full flex items-center justify-center shadow-md transition-colors"
+                title="사진 삭제"
               >
                 <Trash2 className="w-3.5 h-3.5 text-white" />
               </button>
@@ -144,7 +208,7 @@ const PhotoReviewPanel: React.FC<{
 
 /* ───────────────────────── 메인 대시보드 ───────────────────────── */
 const AdminDashboard = () => {
-  const { user, signOut } = useAdminAuth();
+  const { signOut } = useAdminAuth();
   const [teams, setTeams] = useState<AdminTeam[]>([]);
   const [photos, setPhotos] = useState<AdminPhoto[]>([]);
   const [isLoadingTeams, setIsLoadingTeams] = useState(false);
@@ -152,8 +216,18 @@ const AdminDashboard = () => {
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'teams' | 'photos'>('teams');
   const [filterTeamId, setFilterTeamId] = useState('all');
-  const [pendingDelete, setPendingDelete] = useState<AdminPhoto | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  // 사진 삭제
+  const [pendingDeletePhoto, setPendingDeletePhoto] = useState<AdminPhoto | null>(null);
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
+
+  // 참가자 삭제
+  const [pendingDeleteMember, setPendingDeleteMember] = useState<{
+    member: AdminTeam['members'][number];
+    teamName: string;
+  } | null>(null);
+  const [isDeletingMember, setIsDeletingMember] = useState(false);
+
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -190,20 +264,39 @@ const AdminDashboard = () => {
     loadPhotos();
   }, [loadTeams, loadPhotos]);
 
-  const handleDeleteConfirm = async () => {
-    if (!pendingDelete) return;
-    setIsDeleting(true);
+  /* 사진 삭제 확인 */
+  const handleDeletePhotoConfirm = async () => {
+    if (!pendingDeletePhoto) return;
+    setIsDeletingPhoto(true);
     try {
-      await deletePhoto(pendingDelete.id, pendingDelete.url);
-      setPhotos(prev => prev.filter(p => p.id !== pendingDelete.id));
-      showToast('사진이 삭제되었습니다. 칸 상태와 현황이 자동 반영됩니다.');
-      // 팀 현황도 갱신
+      await deletePhoto(pendingDeletePhoto.id, pendingDeletePhoto.url);
+      setPhotos(prev => prev.filter(p => p.id !== pendingDeletePhoto.id));
+      showToast('사진이 삭제되었습니다. 칸 상태와 빙고 현황이 자동 반영됩니다.');
       await loadTeams();
     } catch {
-      showToast('삭제에 실패했습니다.', 'error');
+      showToast('사진 삭제에 실패했습니다.', 'error');
     } finally {
-      setIsDeleting(false);
-      setPendingDelete(null);
+      setIsDeletingPhoto(false);
+      setPendingDeletePhoto(null);
+    }
+  };
+
+  /* 참가자 삭제 확인 */
+  const handleDeleteMemberConfirm = async () => {
+    if (!pendingDeleteMember) return;
+    setIsDeletingMember(true);
+    try {
+      await deleteMember(pendingDeleteMember.member.id);
+      setTeams(prev => prev.map(t => ({
+        ...t,
+        members: t.members.filter(m => m.id !== pendingDeleteMember.member.id),
+      })));
+      showToast(`${pendingDeleteMember.member.name} 참가자가 삭제되었습니다.`);
+    } catch {
+      showToast('참가자 삭제에 실패했습니다.', 'error');
+    } finally {
+      setIsDeletingMember(false);
+      setPendingDeleteMember(null);
     }
   };
 
@@ -220,7 +313,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-xl font-black text-white">관리자 대시보드</h1>
-                <p className="text-xs text-white/60">{user?.email}</p>
+                <p className="text-xs text-white/60">ADMIN001</p>
               </div>
               <div className="flex items-center gap-2">
                 <Link to="/">
@@ -308,7 +401,7 @@ const AdminDashboard = () => {
                             <div>
                               <p className="text-body font-bold text-foreground">{team.name}</p>
                               <p className="text-caption text-muted-foreground">
-                                {team.completedMissions}/{team.totalMissions}칸 · {team.completedLines}줄 · 사진 {team.photoCount}장
+                                {team.completedMissions}/{team.totalMissions}칸 · {team.completedLines}줄 · 사진 {team.photoCount}장 · 참가자 {team.members.length}명
                               </p>
                             </div>
                           </div>
@@ -333,17 +426,31 @@ const AdminDashboard = () => {
 
                       {isExpanded && (
                         <div className="border-t border-border p-3.5">
-                          <p className="text-body-sm font-bold text-foreground mb-2">조원 ({team.members.length}명)</p>
+                          <p className="text-body-sm font-bold text-foreground mb-2">
+                            조원 ({team.members.length}명)
+                          </p>
                           <div className="space-y-1.5 mb-3">
                             {team.members.length === 0 ? (
                               <p className="text-caption text-muted-foreground">아직 참가자가 없습니다.</p>
                             ) : team.members.map(m => (
                               <div key={m.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-body-sm text-foreground font-medium">{m.name}</span>
-                                  <span className="text-caption text-muted-foreground">{m.school} · {m.major}</span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-body-sm text-foreground font-medium truncate">{m.name}</span>
+                                  <span className="text-caption text-muted-foreground truncate hidden sm:inline">{m.school} · {m.major}</span>
                                 </div>
-                                <span className="text-caption text-muted-foreground">{m.cohort}</span>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className="text-caption text-muted-foreground">{m.cohort}</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingDeleteMember({ member: m, teamName: team.name });
+                                    }}
+                                    className="w-6 h-6 rounded-full bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors"
+                                    title="참가자 삭제"
+                                  >
+                                    <UserX className="w-3.5 h-3.5 text-destructive" />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -372,7 +479,7 @@ const AdminDashboard = () => {
               <PhotoReviewPanel
                 photos={photos}
                 isLoading={isLoadingPhotos}
-                onDelete={setPendingDelete}
+                onDelete={setPendingDeletePhoto}
                 filterTeamId={filterTeamId}
                 teams={teams}
                 onFilterChange={setFilterTeamId}
@@ -382,13 +489,24 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* 삭제 확인 모달 */}
-      {pendingDelete && (
-        <DeleteConfirmModal
-          photo={pendingDelete}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setPendingDelete(null)}
-          isDeleting={isDeleting}
+      {/* 사진 삭제 확인 모달 */}
+      {pendingDeletePhoto && (
+        <DeletePhotoModal
+          photo={pendingDeletePhoto}
+          onConfirm={handleDeletePhotoConfirm}
+          onCancel={() => setPendingDeletePhoto(null)}
+          isDeleting={isDeletingPhoto}
+        />
+      )}
+
+      {/* 참가자 삭제 확인 모달 */}
+      {pendingDeleteMember && (
+        <DeleteMemberModal
+          member={pendingDeleteMember.member}
+          teamName={pendingDeleteMember.teamName}
+          onConfirm={handleDeleteMemberConfirm}
+          onCancel={() => setPendingDeleteMember(null)}
+          isDeleting={isDeletingMember}
         />
       )}
 

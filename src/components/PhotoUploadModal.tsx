@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useGame } from '@/contexts/GameContext';
 import { BingoCell } from '@/types/game';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ interface PhotoUploadModalProps {
 }
 
 export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClose }) => {
-  const { uploadPhoto, removePhoto, user, syncCellCompletion } = useGame();
+  const { uploadPhoto, removePhoto, deleteUserPhoto, user, syncCellCompletion } = useGame();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -21,9 +21,37 @@ export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClos
   const [uploadStage, setUploadStage] = useState<'idle' | 'uploading' | 'syncing' | 'done' | 'error'>('idle');
   const [uploadedCount, setUploadedCount] = useState(0);
   const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
   const isBonusMission = !!cell.mission.isBonus;
 
+  // 미리보기 URL 메모리 해제 (컴포넌트 언마운트 또는 URL 변경 시)
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
   const existingPhotos = cell.photos.filter((p) => p !== 'free');
+  const existingMeta = cell.photoMeta ?? [];
+
+  const handleDeleteExistingPhoto = async (index: number) => {
+    const meta = existingMeta[index];
+    if (!meta) {
+      removePhoto(cell.id, index);
+      return;
+    }
+    setDeletingIndex(index);
+    try {
+      await deleteUserPhoto(cell.id, meta.id, meta.storagePath);
+    } catch (e) {
+      console.error('사진 삭제 실패:', e);
+      alert('사진 삭제에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setDeletingIndex(null);
+      setPendingDeleteIndex(null);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -36,6 +64,8 @@ export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClos
     });
     setSelectedFiles((prev) => [...prev, ...newFiles]);
     setPreviewUrls((prev) => [...prev, ...newUrls]);
+    // input 초기화 (같은 파일 재선택 허용)
+    e.target.value = '';
   };
 
   const handleReplaceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,6 +112,7 @@ export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClos
   };
 
   const removePreview = (index: number) => {
+    URL.revokeObjectURL(previewUrls[index]);
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
@@ -99,7 +130,10 @@ export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={isUploading || deletingIndex !== null ? undefined : onClose}
+      />
 
       <div className={cn(
         "relative w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[85vh] overflow-hidden",
@@ -166,6 +200,32 @@ export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClos
 
         {/* Content */}
         <div className="p-4 overflow-y-auto max-h-[55vh] relative z-10">
+          {/* 삭제 확인 인라인 배너 */}
+          {pendingDeleteIndex !== null && (
+            <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 flex items-center justify-between gap-3">
+              <p className="text-[12px] font-bold text-destructive leading-tight">
+                {cell.mission.isBonus
+                  ? '보너스 사진을 삭제하면 보너스 셀과 추가 인정된 셀도 미완료로 돌아갑니다.'
+                  : '이 사진을 삭제하면 미션 완료가 취소될 수 있습니다.'}
+              </p>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => setPendingDeleteIndex(null)}
+                  className="px-3 py-1 rounded-full text-[11px] font-bold bg-white border border-border text-foreground"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => handleDeleteExistingPhoto(pendingDeleteIndex)}
+                  disabled={deletingIndex !== null}
+                  className="px-3 py-1 rounded-full text-[11px] font-bold bg-destructive text-white disabled:opacity-60"
+                >
+                  {deletingIndex !== null ? '삭제 중…' : '삭제'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {existingPhotos.length > 0 && (
             <div className="mb-4">
               <p className="text-body-sm font-bold text-foreground mb-2">
@@ -181,19 +241,38 @@ export const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({ cell, onClos
                     )}
                   >
                     <img src={photo} alt="" className="w-full h-full object-cover" />
+                    {deletingIndex === index && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => { setReplaceIndex(index); replaceInputRef.current?.click(); }} className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+                      <button
+                        onClick={() => { setReplaceIndex(index); replaceInputRef.current?.click(); }}
+                        className="w-8 h-8 bg-accent rounded-full flex items-center justify-center"
+                      >
                         <Edit2 className="w-4 h-4 text-accent-foreground" />
                       </button>
-                      <button onClick={() => removePhoto(cell.id, index)} className="w-8 h-8 bg-destructive rounded-full flex items-center justify-center">
+                      <button
+                        onClick={() => setPendingDeleteIndex(index)}
+                        disabled={deletingIndex !== null}
+                        className="w-8 h-8 bg-destructive rounded-full flex items-center justify-center disabled:opacity-50"
+                      >
                         <Trash2 className="w-4 h-4 text-destructive-foreground" />
                       </button>
                     </div>
                     <div className="absolute top-1 right-1 flex gap-1 sm:hidden">
-                      <button onClick={() => { setReplaceIndex(index); replaceInputRef.current?.click(); }} className="w-6 h-6 bg-accent rounded-full flex items-center justify-center">
+                      <button
+                        onClick={() => { setReplaceIndex(index); replaceInputRef.current?.click(); }}
+                        className="w-6 h-6 bg-accent rounded-full flex items-center justify-center"
+                      >
                         <Edit2 className="w-3 h-3 text-accent-foreground" />
                       </button>
-                      <button onClick={() => removePhoto(cell.id, index)} className="w-6 h-6 bg-destructive rounded-full flex items-center justify-center">
+                      <button
+                        onClick={() => setPendingDeleteIndex(index)}
+                        disabled={deletingIndex !== null}
+                        className="w-6 h-6 bg-destructive rounded-full flex items-center justify-center disabled:opacity-50"
+                      >
                         <Trash2 className="w-3 h-3 text-destructive-foreground" />
                       </button>
                     </div>
