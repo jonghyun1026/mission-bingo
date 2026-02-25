@@ -697,6 +697,47 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true, teams: result }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    // ── 게임 데이터 전체 초기화 (관리자 전용) ──
+    if (action === 'reset_game') {
+      // 1. photos 테이블에서 storage_path 목록 수집 후 Storage 파일 삭제
+      const { data: photoRows } = await supabase.from('photos').select('storage_path')
+      if (photoRows && photoRows.length > 0) {
+        const paths = photoRows
+          .map((p: { storage_path: string | null }) => p.storage_path?.match(/mission-photos\/(.+)$/)?.[1])
+          .filter(Boolean) as string[]
+        if (paths.length > 0) {
+          await supabase.storage.from('mission-photos').remove(paths)
+        }
+      }
+
+      // 2. photos 레코드 삭제
+      await supabase.from('photos').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+
+      // 3. board_cells 완료 상태 초기화
+      await supabase.from('board_cells').update({
+        is_completed: false,
+        completed_at: null,
+        bonus_awarded_by: null,
+      }).neq('id', '00000000-0000-0000-0000-000000000000')
+
+      // 4. bingo_boards 삭제
+      await supabase.from('bingo_boards').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+
+      // 5. team_members 삭제
+      await supabase.from('team_members').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+
+      // 6. teams 진행 상태 초기화
+      await supabase.from('teams').update({
+        completed_lines: 0,
+        is_mission_complete: false,
+        second_line_completed_at: null,
+      }).neq('id', '00000000-0000-0000-0000-000000000000')
+
+      return new Response(JSON.stringify({ success: true, message: '게임 데이터가 초기화되었습니다.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     return new Response(
       JSON.stringify({ error: 'Unknown action' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }

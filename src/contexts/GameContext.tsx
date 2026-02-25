@@ -47,6 +47,7 @@ interface GameContextType {
   fetchTeamSnapshot: () => Promise<void>;
   fetchTeamGallery: (teamId?: string) => Promise<void>;
   syncCellCompletion: (cellId: number, dbCellId: string, photoUrls: string[]) => Promise<void>;
+  refreshBoard: () => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -367,6 +368,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return newCompletedLines;
   }, [bingoBoard, completedLines, user?.teamDbId]);
 
+  const refreshBoard = useCallback(async () => {
+    if (!user?.teamDbId) return;
+    try {
+      const refreshed = await getBoard(user.teamDbId);
+      const newBoard = createBoardFromDb(refreshed.cells, refreshed.photos || []);
+      setBingoBoard(newBoard);
+      setCompletedLines(computeAllLines(newBoard));
+    } catch (error) {
+      console.error('Failed to refresh board:', error);
+      throw error;
+    }
+  }, [user?.teamDbId, computeAllLines]);
+
   // 30초마다 보드를 서버에서 재조회 (admin 사진 삭제 반영)
   useEffect(() => {
     if (!user?.teamDbId) return;
@@ -416,6 +430,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         fetchTeamSnapshot,
         fetchTeamGallery,
         syncCellCompletion,
+        refreshBoard,
       }}
     >
       {children}

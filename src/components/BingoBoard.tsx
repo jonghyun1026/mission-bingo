@@ -7,7 +7,7 @@ import { AllCompleteCelebration } from './AllCompleteCelebration';
 import { TeamMembersModal } from './TeamMembersModal';
 import { OtherTeamsModal } from './OtherTeamsModal';
 import { BingoCell as BingoCellType, CompletedLine } from '@/types/game';
-import { LogOut, Sparkles, Users2 } from 'lucide-react';
+import { LogOut, RefreshCw, Sparkles, Users2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export const BingoBoard: React.FC = () => {
@@ -25,7 +25,9 @@ export const BingoBoard: React.FC = () => {
     myRank,
     fetchTeamSnapshot,
     fetchTeamGallery,
+    refreshBoard,
   } = useGame();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedCell, setSelectedCell] = useState<BingoCellType | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
@@ -159,6 +161,16 @@ export const BingoBoard: React.FC = () => {
     setCelebrationQueue(rest);
   }, [celebrationQueue, celebrationData.show]);
 
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await refreshBoard();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleCellClick = (cell: BingoCellType) => {
     setSelectedCell(cell);
     setShowUploadModal(true);
@@ -267,7 +279,17 @@ export const BingoBoard: React.FC = () => {
         </div>
 
         {/* 하단 액션 */}
-        <div className="text-center mt-5">
+        <div className="flex items-center justify-center gap-2 mt-5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="bg-white/70 hover:bg-white border-[#F0C8B0] text-[#A04020] hover:text-destructive rounded-full px-5 font-bold shadow-sm transition-all"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            새로고침
+          </Button>
           <Button 
             variant="outline" 
             size="sm" 
