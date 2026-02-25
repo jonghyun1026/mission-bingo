@@ -161,8 +161,9 @@ export const BingoBoard: React.FC = () => {
     setCelebrationQueue(rest);
   }, [celebrationQueue, celebrationData.show]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isRefreshing) return;
+    e.currentTarget.blur();
     setIsRefreshing(true);
     try {
       await refreshBoard();
@@ -283,7 +284,7 @@ export const BingoBoard: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleRefresh}
+            onClick={(e) => handleRefresh(e)}
             disabled={isRefreshing}
             className="bg-white/70 hover:bg-white border-[#F0C8B0] text-[#A04020] hover:text-destructive rounded-full px-5 font-bold shadow-sm transition-all"
           >
