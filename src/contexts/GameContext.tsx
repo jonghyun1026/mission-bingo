@@ -155,6 +155,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
+  // 팀 스냅샷에서 내 순위 계산
+  const syncRankFromSnapshot = useCallback(async (teamDbId: string) => {
+    try {
+      const snapshot = await getTeamSnapshot();
+      setTeamSnapshots(snapshot);
+      const mine = snapshot.find((t) => t.id === teamDbId);
+      if (mine && typeof mine.rank === 'number') setMyRank(mine.rank);
+    } catch {
+      // 조용히 실패
+    }
+  }, []);
+
   // 앱 시작 시 저장된 세션으로 자동 복원
   useEffect(() => {
     const restore = async () => {
@@ -167,6 +179,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(saved);
         setBingoBoard(newBoard);
         setCompletedLines(computeAllLines(newBoard));
+        // 복원 시 서버에서 현재 순위 조회
+        syncRankFromSnapshot(saved.teamDbId);
       } catch {
         localStorage.removeItem(SESSION_KEY);
       } finally {
@@ -175,7 +189,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     restore();
   // computeAllLines는 안정적인 callback이므로 deps에 포함
-  }, [computeAllLines]);
+  }, [computeAllLines, syncRankFromSnapshot]);
 
   const login = useCallback(async (
     teamId: string,
@@ -219,14 +233,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setBingoBoard(createBoardFromDb(result.cells, result.photos || []));
       setCompletedLines([]);
       setMyRank(null);
-      fetchTeamSnapshot().catch(console.error);
+      // 로그인 직후 서버에서 현재 순위 동기화
+      syncRankFromSnapshot(teamId);
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, [fetchTeamSnapshot]);
+  }, [syncRankFromSnapshot]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(SESSION_KEY);
@@ -371,7 +386,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refreshBoard = useCallback(async () => {
     if (!user?.teamDbId) return;
     try {
-      const refreshed = await getBoard(user.teamDbId);
+      const [refreshed] = await Promise.all([
+        getBoard(user.teamDbId),
+        syncRankFromSnapshot(user.teamDbId),
+      ]);
       const newBoard = createBoardFromDb(refreshed.cells, refreshed.photos || []);
       setBingoBoard(newBoard);
       setCompletedLines(computeAllLines(newBoard));
@@ -379,7 +397,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Failed to refresh board:', error);
       throw error;
     }
-  }, [user?.teamDbId, computeAllLines]);
+  }, [user?.teamDbId, computeAllLines, syncRankFromSnapshot]);
 
   // 30초마다 보드를 서버에서 재조회 (admin 사진 삭제 반영)
   useEffect(() => {
