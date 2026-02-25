@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { TeamGalleryPhoto, TeamSnapshot } from '@/lib/gameApi';
 import { X, Images, Users, Medal } from 'lucide-react';
 import mapaeImage from '@/assets/mapae-red.png';
+import { PhotoLightbox } from './PhotoLightbox';
 
 interface OtherTeamsModalProps {
   currentTeamId?: string;
@@ -31,6 +32,7 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
 }) => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'snapshot' | 'gallery'>('snapshot');
+  const [lightboxPhoto, setLightboxPhoto] = useState<TeamGalleryPhoto | null>(null);
 
   useEffect(() => {
     onFetchSnapshots().catch(console.error);
@@ -252,7 +254,11 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {gallery.map((photo) => (
-                    <div key={photo.id} className="rounded-lg overflow-hidden border border-border bg-white">
+                    <div
+                      key={photo.id}
+                      className="rounded-lg overflow-hidden border border-border bg-white cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
+                      onClick={() => setLightboxPhoto(photo)}
+                    >
                       <img src={photo.url} alt={photo.missionTitle} className="w-full h-24 object-cover" />
                       <div className="p-1.5">
                         <p className="text-[11px] font-bold text-foreground truncate">{photo.teamName}</p>
@@ -267,6 +273,15 @@ export const OtherTeamsModal: React.FC<OtherTeamsModalProps> = ({
           )}
         </div>
       </div>
+
+      {lightboxPhoto && (
+        <PhotoLightbox
+          url={lightboxPhoto.url}
+          caption={`${lightboxPhoto.teamName} · ${lightboxPhoto.missionTitle}`}
+          subCaption={lightboxPhoto.uploaderName}
+          onClose={() => setLightboxPhoto(null)}
+        />
+      )}
     </div>
   );
 };

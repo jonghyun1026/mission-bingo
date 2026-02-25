@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import {
   Users, Crown, ImagePlus, ChevronDown, ChevronUp,
   ArrowLeft, LogOut, Trash2, RefreshCw, X, AlertTriangle, UserX,
-  Shield, Trophy, Camera,
+  Shield, Trophy, Camera, ZoomIn,
 } from 'lucide-react';
+import { PhotoLightbox } from '@/components/PhotoLightbox';
 import { Link } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { AdminLoginForm } from '@/components/AdminLoginForm';
@@ -128,6 +129,7 @@ const PhotoReviewPanel: React.FC<{
   teams: AdminTeam[];
   onFilterChange: (teamId: string) => void;
 }> = ({ photos, isLoading, onDelete, filterTeamId, teams, onFilterChange }) => {
+  const [lightboxPhoto, setLightboxPhoto] = useState<AdminPhoto | null>(null);
   const filtered = filterTeamId === 'all' ? photos : photos.filter(p => p.teamId === filterTeamId);
 
   return (
@@ -175,25 +177,41 @@ const PhotoReviewPanel: React.FC<{
           <p className="text-sm font-bold text-muted-foreground">업로드된 사진이 없습니다</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {filtered.map(photo => (
-            <div key={photo.id} className="rounded-2xl overflow-hidden border border-white/50 bg-white/40 backdrop-blur-sm relative group shadow-sm">
-              <img src={photo.url} alt={photo.missionTitle} className="w-full h-28 object-cover" />
-              <button
-                onClick={() => onDelete(photo)}
-                className="absolute top-2 right-2 w-7 h-7 bg-destructive/85 hover:bg-destructive rounded-full flex items-center justify-center shadow-md transition-all hover:scale-110"
-                title="사진 삭제"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-white" />
-              </button>
-              <div className="p-2.5">
-                <p className="text-[11px] font-black text-foreground truncate">{photo.teamName}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{photo.missionTitle}</p>
-                <p className="text-[10px] text-muted-foreground/70 truncate">{photo.uploaderName}</p>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {filtered.map(photo => (
+              <div key={photo.id} className="rounded-2xl overflow-hidden border border-white/50 bg-white/40 backdrop-blur-sm relative group shadow-sm">
+                <div className="relative cursor-pointer" onClick={() => setLightboxPhoto(photo)}>
+                  <img src={photo.url} alt={photo.missionTitle} className="w-full h-28 object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                  </div>
+                </div>
+                <button
+                  onClick={() => onDelete(photo)}
+                  className="absolute top-2 right-2 w-7 h-7 bg-destructive/85 hover:bg-destructive rounded-full flex items-center justify-center shadow-md transition-all hover:scale-110"
+                  title="사진 삭제"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-white" />
+                </button>
+                <div className="p-2.5">
+                  <p className="text-[11px] font-black text-foreground truncate">{photo.teamName}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{photo.missionTitle}</p>
+                  <p className="text-[10px] text-muted-foreground/70 truncate">{photo.uploaderName}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {lightboxPhoto && (
+            <PhotoLightbox
+              url={lightboxPhoto.url}
+              caption={`${lightboxPhoto.teamName} · ${lightboxPhoto.missionTitle}`}
+              subCaption={lightboxPhoto.uploaderName}
+              showDownload
+              onClose={() => setLightboxPhoto(null)}
+            />
+          )}
+        </>
       )}
     </div>
   );
